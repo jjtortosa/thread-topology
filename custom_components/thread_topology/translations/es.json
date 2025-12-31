@@ -1,0 +1,31 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Topología de Red Thread",
+        "description": "Configura la conexión al OpenThread Border Router.\n\nURL por defecto para el addon OTBR de Home Assistant: `{default_url}`",
+        "data": {
+          "url": "URL del OTBR"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "No se puede conectar al OTBR. Asegúrate de que el addon OpenThread Border Router está en funcionamiento.",
+      "timeout": "Tiempo de espera agotado. El OTBR puede ser inaccesible.",
+      "unknown": "Se ha producido un error desconocido."
+    },
+    "abort": {
+      "already_configured": "Esta red Thread ya está configurada."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "thread_network": {
+        "name": "Red Thread"
+      },
+      "thread_topology_map": {
+        "name": "Mapa de Topología Thread"
+      }
+    }
+  }
+}

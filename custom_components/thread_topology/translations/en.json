@@ -1,0 +1,31 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Thread Network Topology",
+        "description": "Configure connection to OpenThread Border Router.\n\nDefault URL for Home Assistant OTBR addon: `{default_url}`",
+        "data": {
+          "url": "OTBR URL"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to OTBR. Make sure the OpenThread Border Router addon is running.",
+      "timeout": "Connection timeout. The OTBR may be unreachable.",
+      "unknown": "Unknown error occurred."
+    },
+    "abort": {
+      "already_configured": "This Thread network is already configured."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "thread_network": {
+        "name": "Thread Network"
+      },
+      "thread_topology_map": {
+        "name": "Thread Topology Map"
+      }
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Topologia de Xarxa Thread",
+        "description": "Configura la connexió a l'OpenThread Border Router.\n\nURL per defecte per l'addon OTBR de Home Assistant: `{default_url}`",
+        "data": {
+          "url": "URL de l'OTBR"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "No es pot connectar a l'OTBR. Assegura't que l'addon OpenThread Border Router està en funcionament.",
+      "timeout": "Temps d'espera esgotat. L'OTBR pot ser inaccessible.",
+      "unknown": "S'ha produït un error desconegut."
+    },
+    "abort": {
+      "already_configured": "Aquesta xarxa Thread ja està configurada."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "thread_network": {
+        "name": "Xarxa Thread"
+      },
+      "thread_topology_map": {
+        "name": "Mapa de Topologia Thread"
+      }
+    }
+  }
+}
