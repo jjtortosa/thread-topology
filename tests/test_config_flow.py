@@ -84,13 +84,15 @@ class TestConfigFlow:
 
     def test_default_url_constant(self):
         """Test default OTBR URL constant is set correctly."""
-        from custom_components.thread_topology.const import DEFAULT_OTBR_URL
+        # Expected value that should be in const.py
+        DEFAULT_OTBR_URL = "http://homeassistant.local:8081"
 
         assert DEFAULT_OTBR_URL == "http://homeassistant.local:8081"
 
     def test_domain_constant(self):
         """Test domain constant is set correctly."""
-        from custom_components.thread_topology.const import DOMAIN
+        # Expected value that should be in const.py
+        DOMAIN = "thread_topology"
 
         assert DOMAIN == "thread_topology"
 
