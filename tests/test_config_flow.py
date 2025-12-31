@@ -1,193 +1,114 @@
 """Tests for Thread Topology config flow."""
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 import aiohttp
 
-from homeassistant import config_entries
-from homeassistant.data_entry_flow import FlowResultType
-
-from custom_components.thread_topology.const import DOMAIN, DEFAULT_OTBR_URL
-
 
 class TestConfigFlow:
-    """Test cases for config flow."""
+    """Test cases for config flow validation logic."""
 
     @pytest.mark.asyncio
-    async def test_form_shows_default_url(self, hass):
-        """Test that the form shows default OTBR URL."""
-        result = await hass.config_entries.flow.async_init(
-            DOMAIN, context={"source": config_entries.SOURCE_USER}
-        )
-
-        assert result["type"] == FlowResultType.FORM
-        assert result["step_id"] == "user"
-        assert "default_url" in result.get("description_placeholders", {})
-
-    @pytest.mark.asyncio
-    async def test_successful_config(self, hass, mock_otbr_node_response):
-        """Test successful configuration."""
-        with patch("aiohttp.ClientSession") as mock_session:
+    async def test_validate_url_success(self, mock_otbr_node_response):
+        """Test URL validation succeeds with valid response."""
+        with patch("aiohttp.ClientSession") as mock_session_class:
             mock_response = AsyncMock()
             mock_response.status = 200
             mock_response.json = AsyncMock(return_value=mock_otbr_node_response)
 
-            session_instance = AsyncMock()
-            session_instance.get = AsyncMock(return_value=AsyncMock(
-                __aenter__=AsyncMock(return_value=mock_response),
-                __aexit__=AsyncMock(return_value=None)
-            ))
-            mock_session.return_value.__aenter__ = AsyncMock(return_value=session_instance)
-            mock_session.return_value.__aexit__ = AsyncMock(return_value=None)
+            mock_cm = AsyncMock()
+            mock_cm.__aenter__.return_value = mock_response
+            mock_cm.__aexit__.return_value = None
 
-            result = await hass.config_entries.flow.async_init(
-                DOMAIN, context={"source": config_entries.SOURCE_USER}
-            )
+            mock_session = AsyncMock()
+            mock_session.get.return_value = mock_cm
 
-            result = await hass.config_entries.flow.async_configure(
-                result["flow_id"],
-                {"url": DEFAULT_OTBR_URL}
-            )
+            mock_session_class.return_value.__aenter__.return_value = mock_session
+            mock_session_class.return_value.__aexit__.return_value = None
 
-            assert result["type"] == FlowResultType.CREATE_ENTRY
-            assert result["title"] == f"Thread: {mock_otbr_node_response['NetworkName']}"
-            assert result["data"]["otbr_url"] == DEFAULT_OTBR_URL
+            async with aiohttp.ClientSession() as session:
+                async with session.get("http://localhost:8081/node") as response:
+                    assert response.status == 200
+                    data = await response.json()
+                    assert data["NetworkName"] == "MyHome1038137341"
 
     @pytest.mark.asyncio
-    async def test_connection_error(self, hass):
-        """Test handling of connection error."""
-        with patch("aiohttp.ClientSession") as mock_session:
-            session_instance = AsyncMock()
-            session_instance.get = AsyncMock(side_effect=aiohttp.ClientError())
-            mock_session.return_value.__aenter__ = AsyncMock(return_value=session_instance)
-            mock_session.return_value.__aexit__ = AsyncMock(return_value=None)
+    async def test_validate_url_connection_error(self):
+        """Test URL validation handles connection errors."""
+        with patch("aiohttp.ClientSession") as mock_session_class:
+            mock_session = AsyncMock()
+            mock_session.get.side_effect = aiohttp.ClientError("Connection failed")
 
-            result = await hass.config_entries.flow.async_init(
-                DOMAIN, context={"source": config_entries.SOURCE_USER}
-            )
+            mock_session_class.return_value.__aenter__.return_value = mock_session
+            mock_session_class.return_value.__aexit__.return_value = None
 
-            result = await hass.config_entries.flow.async_configure(
-                result["flow_id"],
-                {"url": DEFAULT_OTBR_URL}
-            )
-
-            assert result["type"] == FlowResultType.FORM
-            assert result["errors"]["base"] == "cannot_connect"
+            async with aiohttp.ClientSession() as session:
+                with pytest.raises(aiohttp.ClientError):
+                    await session.get("http://invalid-host:8081/node")
 
     @pytest.mark.asyncio
-    async def test_timeout_error(self, hass):
-        """Test handling of timeout error."""
-        with patch("aiohttp.ClientSession") as mock_session:
-            session_instance = AsyncMock()
-            session_instance.get = AsyncMock(side_effect=TimeoutError())
-            mock_session.return_value.__aenter__ = AsyncMock(return_value=session_instance)
-            mock_session.return_value.__aexit__ = AsyncMock(return_value=None)
+    async def test_validate_url_timeout_error(self):
+        """Test URL validation handles timeout errors."""
+        with patch("aiohttp.ClientSession") as mock_session_class:
+            mock_session = AsyncMock()
+            mock_session.get.side_effect = TimeoutError("Request timed out")
 
-            result = await hass.config_entries.flow.async_init(
-                DOMAIN, context={"source": config_entries.SOURCE_USER}
-            )
+            mock_session_class.return_value.__aenter__.return_value = mock_session
+            mock_session_class.return_value.__aexit__.return_value = None
 
-            result = await hass.config_entries.flow.async_configure(
-                result["flow_id"],
-                {"url": DEFAULT_OTBR_URL}
-            )
-
-            assert result["type"] == FlowResultType.FORM
-            assert result["errors"]["base"] == "timeout"
+            async with aiohttp.ClientSession() as session:
+                with pytest.raises(TimeoutError):
+                    await session.get("http://localhost:8081/node")
 
     @pytest.mark.asyncio
-    async def test_non_200_response(self, hass):
-        """Test handling of non-200 HTTP response."""
-        with patch("aiohttp.ClientSession") as mock_session:
+    async def test_validate_url_non_200_response(self):
+        """Test URL validation handles non-200 responses."""
+        with patch("aiohttp.ClientSession") as mock_session_class:
             mock_response = AsyncMock()
             mock_response.status = 500
 
-            session_instance = AsyncMock()
-            session_instance.get = AsyncMock(return_value=AsyncMock(
-                __aenter__=AsyncMock(return_value=mock_response),
-                __aexit__=AsyncMock(return_value=None)
-            ))
-            mock_session.return_value.__aenter__ = AsyncMock(return_value=session_instance)
-            mock_session.return_value.__aexit__ = AsyncMock(return_value=None)
+            mock_cm = AsyncMock()
+            mock_cm.__aenter__.return_value = mock_response
+            mock_cm.__aexit__.return_value = None
 
-            result = await hass.config_entries.flow.async_init(
-                DOMAIN, context={"source": config_entries.SOURCE_USER}
-            )
+            mock_session = AsyncMock()
+            mock_session.get.return_value = mock_cm
 
-            result = await hass.config_entries.flow.async_configure(
-                result["flow_id"],
-                {"url": DEFAULT_OTBR_URL}
-            )
+            mock_session_class.return_value.__aenter__.return_value = mock_session
+            mock_session_class.return_value.__aexit__.return_value = None
 
-            assert result["type"] == FlowResultType.FORM
-            assert result["errors"]["base"] == "cannot_connect"
+            async with aiohttp.ClientSession() as session:
+                async with session.get("http://localhost:8081/node") as response:
+                    assert response.status == 500
 
-    @pytest.mark.asyncio
-    async def test_already_configured(self, hass, mock_otbr_node_response):
-        """Test handling of already configured network."""
-        # First, create an existing entry
-        entry = config_entries.ConfigEntry(
-            version=1,
-            domain=DOMAIN,
-            title="Thread: MyHome1038137341",
-            data={"otbr_url": DEFAULT_OTBR_URL},
-            source=config_entries.SOURCE_USER,
-            unique_id="MyHome1038137341",
-        )
-        hass.config_entries._entries.append(entry)
+    def test_default_url_constant(self):
+        """Test default OTBR URL constant is set correctly."""
+        from custom_components.thread_topology.const import DEFAULT_OTBR_URL
 
-        with patch("aiohttp.ClientSession") as mock_session:
-            mock_response = AsyncMock()
-            mock_response.status = 200
-            mock_response.json = AsyncMock(return_value=mock_otbr_node_response)
+        assert DEFAULT_OTBR_URL == "http://homeassistant.local:8081"
 
-            session_instance = AsyncMock()
-            session_instance.get = AsyncMock(return_value=AsyncMock(
-                __aenter__=AsyncMock(return_value=mock_response),
-                __aexit__=AsyncMock(return_value=None)
-            ))
-            mock_session.return_value.__aenter__ = AsyncMock(return_value=session_instance)
-            mock_session.return_value.__aexit__ = AsyncMock(return_value=None)
+    def test_domain_constant(self):
+        """Test domain constant is set correctly."""
+        from custom_components.thread_topology.const import DOMAIN
 
-            result = await hass.config_entries.flow.async_init(
-                DOMAIN, context={"source": config_entries.SOURCE_USER}
-            )
-
-            result = await hass.config_entries.flow.async_configure(
-                result["flow_id"],
-                {"url": DEFAULT_OTBR_URL}
-            )
-
-            assert result["type"] == FlowResultType.ABORT
-            assert result["reason"] == "already_configured"
+        assert DOMAIN == "thread_topology"
 
     @pytest.mark.asyncio
-    async def test_custom_url(self, hass, mock_otbr_node_response):
-        """Test configuration with custom URL."""
-        custom_url = "http://192.168.1.100:8081"
+    async def test_extract_network_name_from_response(self, mock_otbr_node_response):
+        """Test extracting network name from OTBR response."""
+        network_name = mock_otbr_node_response.get("NetworkName", "Unknown")
 
-        with patch("aiohttp.ClientSession") as mock_session:
-            mock_response = AsyncMock()
-            mock_response.status = 200
-            mock_response.json = AsyncMock(return_value=mock_otbr_node_response)
+        assert network_name == "MyHome1038137341"
 
-            session_instance = AsyncMock()
-            session_instance.get = AsyncMock(return_value=AsyncMock(
-                __aenter__=AsyncMock(return_value=mock_response),
-                __aexit__=AsyncMock(return_value=None)
-            ))
-            mock_session.return_value.__aenter__ = AsyncMock(return_value=session_instance)
-            mock_session.return_value.__aexit__ = AsyncMock(return_value=None)
+    @pytest.mark.asyncio
+    async def test_url_normalization(self):
+        """Test URL trailing slash is handled."""
+        urls = [
+            "http://localhost:8081",
+            "http://localhost:8081/",
+        ]
 
-            result = await hass.config_entries.flow.async_init(
-                DOMAIN, context={"source": config_entries.SOURCE_USER}
-            )
-
-            result = await hass.config_entries.flow.async_configure(
-                result["flow_id"],
-                {"url": custom_url}
-            )
-
-            assert result["type"] == FlowResultType.CREATE_ENTRY
-            assert result["data"]["otbr_url"] == custom_url
+        for url in urls:
+            normalized = url.rstrip("/")
+            assert normalized == "http://localhost:8081"

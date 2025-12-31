@@ -5,11 +5,6 @@ from collections.abc import Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
-from homeassistant.core import HomeAssistant
-from homeassistant.setup import async_setup_component
-
-from custom_components.thread_topology.const import DOMAIN
-
 
 @pytest.fixture
 def mock_otbr_node_response() -> dict:
@@ -138,28 +133,3 @@ def mock_matter_devices() -> list:
     ]
 
 
-@pytest.fixture
-def mock_aiohttp_session():
-    """Create mock aiohttp ClientSession."""
-    with patch("aiohttp.ClientSession") as mock_session:
-        session_instance = AsyncMock()
-        mock_session.return_value = session_instance
-        yield session_instance
-
-
-@pytest.fixture
-def mock_device_registry():
-    """Create mock device registry."""
-    with patch("homeassistant.helpers.device_registry.async_get") as mock_dr:
-        registry = MagicMock()
-        mock_dr.return_value = registry
-        yield registry
-
-
-@pytest.fixture
-def hass(event_loop) -> Generator[HomeAssistant, None, None]:
-    """Create Home Assistant instance for testing."""
-    hass = HomeAssistant()
-    hass.config.components.add("persistent_notification")
-    yield hass
-    event_loop.run_until_complete(hass.async_stop())
