@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 from datetime import timedelta
 from typing import Any
 
@@ -121,6 +122,9 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             topology = self._process_topology(
                 node_data, diagnostics_data, matter_devices, thread_routers
             )
+
+            # Generate and save SVG to www folder
+            self.save_svg_to_www(topology)
 
             return topology
 
@@ -402,6 +406,256 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             },
             "known_routers": thread_routers,
         }
+
+    def generate_svg(self, topology: dict[str, Any]) -> str:
+        """Generate an SVG visualization of the Thread network topology."""
+        width = 800
+        height = 700
+
+        nodes = topology.get("nodes", {})
+        network_name = topology.get("network_name", "Thread Network")
+        router_count = topology.get("router_count", 0)
+        total_devices = topology.get("total_devices", 0)
+        matter_data = topology.get("matter_devices", {})
+        thread_matter = matter_data.get("thread", [])
+        wifi_matter = matter_data.get("wifi", [])
+
+        # Separate nodes by role
+        leader = None
+        routers = []
+        for ext_addr, node in nodes.items():
+            if node["role"] == "leader":
+                leader = node
+            elif node["role"] == "router":
+                routers.append(node)
+
+        # SVG header and styles
+        svg = f'''<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-opacity="0.3"/>
+    </filter>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2d2d2d"/><stop offset="100%" style="stop-color:#1a1a1a"/>
+    </linearGradient>
+    <linearGradient id="leaderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffd700"/><stop offset="100%" style="stop-color:#ff8c00"/>
+    </linearGradient>
+    <linearGradient id="routerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#03a9f4"/><stop offset="100%" style="stop-color:#0277bd"/>
+    </linearGradient>
+    <linearGradient id="threadGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00bcd4"/><stop offset="100%" style="stop-color:#006064"/>
+    </linearGradient>
+    <linearGradient id="wifiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#9c27b0"/><stop offset="100%" style="stop-color:#6a1b9a"/>
+    </linearGradient>
+    <style>
+      .card {{ fill: url(#cardGrad); }}
+      .title {{ fill: #ffffff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 22px; font-weight: 600; }}
+      .subtitle {{ fill: #9e9e9e; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; }}
+      .stat-value {{ fill: #ffffff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 28px; font-weight: 700; }}
+      .stat-label {{ fill: #757575; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }}
+      .node-label {{ fill: #ffffff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 12px; font-weight: 500; }}
+      .node-sublabel {{ fill: #9e9e9e; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 10px; }}
+      .device-label {{ fill: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 11px; }}
+      .section-title {{ fill: #ffffff; font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; font-weight: 600; }}
+      .connection {{ stroke: #00bcd4; stroke-width: 2; fill: none; opacity: 0.6; }}
+      .connection-mesh {{ stroke: #03a9f4; stroke-width: 1.5; stroke-dasharray: 8,4; fill: none; opacity: 0.4; }}
+    </style>
+  </defs>
+
+  <!-- Card background -->
+  <rect class="card" x="0" y="0" width="{width}" height="{height}" rx="16" ry="16" filter="url(#shadow)"/>
+
+  <!-- Header Section -->
+  <text class="title" x="30" y="45">🧵 Thread Network Topology</text>
+  <text class="subtitle" x="30" y="68">{network_name} • Real-time network visualization</text>
+
+  <!-- Stats Row -->
+  <g transform="translate(30, 90)">
+    <rect x="0" y="0" width="120" height="70" rx="10" fill="#333" opacity="0.5"/>
+    <text class="stat-value" x="60" y="38" text-anchor="middle">{router_count}</text>
+    <text class="stat-label" x="60" y="55" text-anchor="middle">Border Routers</text>
+
+    <rect x="140" y="0" width="120" height="70" rx="10" fill="#333" opacity="0.5"/>
+    <text class="stat-value" x="200" y="38" text-anchor="middle">{total_devices}</text>
+    <text class="stat-label" x="200" y="55" text-anchor="middle">Thread Devices</text>
+
+    <rect x="280" y="0" width="120" height="70" rx="10" fill="#00696b" opacity="0.3"/>
+    <text class="stat-value" x="340" y="38" text-anchor="middle" fill="#00bcd4">{len(thread_matter)}</text>
+    <text class="stat-label" x="340" y="55" text-anchor="middle" fill="#00838f">Matter Thread</text>
+
+    <rect x="420" y="0" width="120" height="70" rx="10" fill="#4a148c" opacity="0.3"/>
+    <text class="stat-value" x="480" y="38" text-anchor="middle" fill="#ce93d8">{len(wifi_matter)}</text>
+    <text class="stat-label" x="480" y="55" text-anchor="middle" fill="#8e24aa">Matter WiFi</text>
+  </g>
+
+  <!-- Divider -->
+  <line x1="30" y1="175" x2="770" y2="175" stroke="#333" stroke-width="1"/>
+'''
+
+        # Calculate positions for nodes
+        leader_x, leader_y = 400, 230
+        router_positions = []
+        num_routers = len(routers)
+
+        if num_routers > 0:
+            router_spacing = min(200, 600 // (num_routers + 1))
+            start_x = 400 - (num_routers - 1) * router_spacing // 2
+            for i in range(num_routers):
+                router_positions.append((start_x + i * router_spacing, 340))
+
+        # Draw connections (Leader to Routers)
+        if leader:
+            for i, pos in enumerate(router_positions):
+                svg += f'  <path class="connection" d="M {leader_x} {leader_y + 20} Q {(leader_x + pos[0])//2} {(leader_y + pos[1])//2 + 20} {pos[0]} {pos[1] - 25}"/>\n'
+
+        # Draw mesh connections between routers
+        for i in range(len(router_positions) - 1):
+            x1, y1 = router_positions[i]
+            x2, y2 = router_positions[i + 1]
+            svg += f'  <path class="connection-mesh" d="M {x1 + 30} {y1} Q {(x1 + x2)//2} {y1 + 30} {x2 - 30} {y2}"/>\n'
+
+        # Draw Leader node
+        if leader:
+            lq = leader.get("link_quality", 3)
+            lq_text = ["Poor", "Fair", "Good", "Excellent"][min(lq, 3)]
+            svg += f'''
+  <!-- LEADER NODE -->
+  <g transform="translate({leader_x}, {leader_y})" filter="url(#glow)">
+    <circle cx="0" cy="0" r="45" fill="url(#leaderGrad)" opacity="0.2"/>
+    <circle cx="0" cy="0" r="35" fill="url(#leaderGrad)"/>
+    <text x="0" y="8" text-anchor="middle" font-size="28">👑</text>
+  </g>
+  <text class="node-label" x="{leader_x}" y="{leader_y + 60}" text-anchor="middle">{leader["name"]}</text>
+  <text class="node-sublabel" x="{leader_x}" y="{leader_y + 74}" text-anchor="middle">{leader["manufacturer"]} • Leader • LQ: {lq_text}</text>
+'''
+            # Draw Leader's children
+            children = leader.get("children", [])
+            if children:
+                child_start_x = leader_x - (len(children) - 1) * 40
+                for j, child in enumerate(children):
+                    cx = child_start_x + j * 80
+                    cy = leader_y + 130
+                    child_name = child.get("name", f"Device {child.get('id', j)}")
+                    child_type = child.get("type", "active")
+                    emoji = "💤" if child_type == "sleepy" else "🔋"
+
+                    svg += f'  <path class="connection" d="M {leader_x} {leader_y + 45} L {cx} {cy - 20}" opacity="0.4"/>\n'
+                    svg += f'''  <g transform="translate({cx}, {cy})">
+    <circle cx="0" cy="0" r="22" fill="url(#threadGrad)" opacity="0.15"/>
+    <circle cx="0" cy="0" r="16" fill="url(#threadGrad)"/>
+    <text x="0" y="5" text-anchor="middle" font-size="14">{emoji}</text>
+  </g>
+  <text class="device-label" x="{cx}" y="{cy + 30}" text-anchor="middle">{child_name[:20]}</text>
+'''
+
+        # Draw Router nodes
+        for i, router in enumerate(routers):
+            if i >= len(router_positions):
+                break
+            rx, ry = router_positions[i]
+            lq = router.get("link_quality", 3)
+            lq_text = ["Poor", "Fair", "Good", "Excellent"][min(lq, 3)]
+
+            svg += f'''
+  <!-- ROUTER {i+1} -->
+  <g transform="translate({rx}, {ry})">
+    <circle cx="0" cy="0" r="32" fill="url(#routerGrad)" opacity="0.2"/>
+    <circle cx="0" cy="0" r="25" fill="url(#routerGrad)"/>
+    <text x="0" y="7" text-anchor="middle" font-size="20">📡</text>
+  </g>
+  <text class="node-label" x="{rx}" y="{ry + 42}" text-anchor="middle">{router["name"]}</text>
+  <text class="node-sublabel" x="{rx}" y="{ry + 55}" text-anchor="middle">{router["manufacturer"]} • Router • LQ: {lq_text}</text>
+'''
+            # Draw Router's children
+            children = router.get("children", [])
+            if children:
+                child_start_x = rx - (len(children) - 1) * 35
+                for j, child in enumerate(children):
+                    cx = child_start_x + j * 70
+                    cy = ry + 120
+                    child_name = child.get("name", f"Device {child.get('id', j)}")
+                    child_type = child.get("type", "active")
+                    emoji = "💤" if child_type == "sleepy" else "🔋"
+
+                    svg += f'  <path class="connection" d="M {rx} {ry + 30} L {cx} {cy - 20}" opacity="0.4"/>\n'
+                    svg += f'''  <g transform="translate({cx}, {cy})">
+    <circle cx="0" cy="0" r="22" fill="url(#threadGrad)" opacity="0.15"/>
+    <circle cx="0" cy="0" r="16" fill="url(#threadGrad)"/>
+    <text x="0" y="5" text-anchor="middle" font-size="14">{emoji}</text>
+  </g>
+  <text class="device-label" x="{cx}" y="{cy + 30}" text-anchor="middle">{child_name[:18]}</text>
+'''
+
+        # WiFi section
+        wifi_y = 580
+        svg += f'''
+  <!-- Divider -->
+  <line x1="30" y1="{wifi_y - 30}" x2="770" y2="{wifi_y - 30}" stroke="#333" stroke-width="1"/>
+
+  <!-- WiFi Section -->
+  <text class="section-title" x="30" y="{wifi_y}">📶 Matter over WiFi</text>
+'''
+        # WiFi devices
+        for i, device in enumerate(wifi_matter[:4]):  # Max 4 devices
+            dx = 60 + i * 180
+            svg += f'''  <g transform="translate({dx}, {wifi_y + 40})">
+    <rect x="-40" y="-25" width="150" height="50" rx="8" fill="url(#wifiGrad)" opacity="0.2"/>
+    <text x="0" y="-2" font-size="16">🔌</text>
+    <text class="device-label" x="25" y="-2">{device["name"][:16]}</text>
+    <text class="node-sublabel" x="25" y="12">{device.get("manufacturer", "")[:16]}</text>
+  </g>
+'''
+
+        # Legend
+        svg += f'''
+  <!-- Legend -->
+  <g transform="translate(550, {wifi_y - 10})">
+    <text class="node-sublabel" x="0" y="0">LEGEND</text>
+    <circle cx="15" cy="20" r="8" fill="url(#leaderGrad)"/>
+    <text class="node-sublabel" x="30" y="24">Leader</text>
+    <circle cx="85" cy="20" r="8" fill="url(#routerGrad)"/>
+    <text class="node-sublabel" x="100" y="24">Router</text>
+    <circle cx="165" cy="20" r="8" fill="url(#threadGrad)"/>
+    <text class="node-sublabel" x="180" y="24">End Device</text>
+  </g>
+
+  <!-- Connection Legend -->
+  <g transform="translate(550, {wifi_y + 35})">
+    <line x1="0" y1="10" x2="40" y2="10" stroke="#00bcd4" stroke-width="2" opacity="0.6"/>
+    <text class="node-sublabel" x="50" y="14">Parent-Child</text>
+    <line x1="130" y1="10" x2="170" y2="10" stroke="#03a9f4" stroke-width="1.5" stroke-dasharray="8,4" opacity="0.4"/>
+    <text class="node-sublabel" x="180" y="14">Mesh</text>
+  </g>
+'''
+        svg += '</svg>'
+        return svg
+
+    def save_svg_to_www(self, topology: dict[str, Any]) -> str | None:
+        """Generate SVG and save to www folder."""
+        try:
+            svg_content = self.generate_svg(topology)
+            www_path = self.hass.config.path("www")
+
+            # Create www folder if it doesn't exist
+            if not os.path.exists(www_path):
+                os.makedirs(www_path)
+
+            svg_path = os.path.join(www_path, "thread_topology.svg")
+            with open(svg_path, "w", encoding="utf-8") as f:
+                f.write(svg_content)
+
+            _LOGGER.debug("SVG saved to %s", svg_path)
+            return "/local/thread_topology.svg"
+        except Exception as err:
+            _LOGGER.error("Failed to save SVG: %s", err)
+            return None
 
     async def async_shutdown(self) -> None:
         """Shutdown the coordinator."""

@@ -6,9 +6,7 @@
 
 A Home Assistant custom integration that visualizes your Thread network topology, similar to the Zigbee network map. See your Thread Border Routers, end devices, and their connections at a glance.
 
-<p align="center">
-  <img src="images/topology-map.svg" alt="Thread Topology Map" width="800">
-</p>
+![Thread Topology Dashboard](images/screenshot.png)
 
 ## Features
 
