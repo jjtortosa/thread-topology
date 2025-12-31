@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="520" viewBox="0 0 600 520">
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.15"/>
+    </filter>
+    <style>
+      .card { fill: #1c1c1c; }
+      .title { fill: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 16px; font-weight: 500; }
+      .header { fill: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 18px; font-weight: 600; }
+      .stats { fill: #9e9e9e; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; }
+      .device-name { fill: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; font-weight: 500; }
+      .device-info { fill: #9e9e9e; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; font-style: italic; }
+      .child-name { fill: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 500; }
+      .child-info { fill: #757575; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11px; font-style: italic; }
+      .section-title { fill: #9e9e9e; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 500; }
+      .wifi-item { fill: #b0b0b0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; }
+      .lq-bar { fill: #4caf50; }
+      .lq-bar-empty { fill: #424242; }
+      .divider { stroke: #333333; stroke-width: 1; }
+      .tree-line { stroke: #424242; stroke-width: 1; fill: none; }
+    </style>
+  </defs>
+
+  <!-- Card background -->
+  <rect class="card" x="10" y="10" width="580" height="500" rx="12" ry="12" filter="url(#shadow)"/>
+
+  <!-- Card title bar -->
+  <text class="title" x="30" y="42">🧵 Thread Network</text>
+
+  <!-- Divider -->
+  <line class="divider" x1="30" y1="58" x2="570" y2="58"/>
+
+  <!-- Header -->
+  <text class="header" x="30" y="90">🧵 Thread Network: MyHome1038137341</text>
+
+  <!-- Stats -->
+  <text class="stats" x="30" y="115">
+    <tspan font-weight="600" fill="#ffffff">Routers:</tspan> 2 |
+    <tspan font-weight="600" fill="#ffffff">Thread Devices:</tspan> 4
+  </text>
+  <text class="stats" x="30" y="135">
+    <tspan font-weight="600" fill="#ffffff">Matter:</tspan> 3 Thread + 2 WiFi
+  </text>
+
+  <!-- Divider -->
+  <line class="divider" x1="30" y1="155" x2="570" y2="155"/>
+
+  <!-- Leader Node -->
+  <text x="30" y="185" font-size="20">👑</text>
+  <text class="device-name" x="55" y="185">SkyConnect (OTBR)</text>
+  <text class="device-info" x="30" y="205">Nabu Casa • Leader • LQ: </text>
+  <!-- LQ Bar -->
+  <rect class="lq-bar" x="175" y="194" width="12" height="12" rx="2"/>
+  <rect class="lq-bar" x="189" y="194" width="12" height="12" rx="2"/>
+  <rect class="lq-bar" x="203" y="194" width="12" height="12" rx="2"/>
+  <text class="device-info" x="220" y="205">Excellent</text>
+
+  <!-- Child of Leader -->
+  <path class="tree-line" d="M 45 215 L 45 235 L 55 235"/>
+  <text x="60" y="240" font-size="16">💤</text>
+  <text class="child-name" x="82" y="240">Smart Presence Sensor</text>
+  <text class="child-info" x="60" y="258">Meross Smart Presence Sensor</text>
+
+  <!-- Router Node -->
+  <text x="30" y="300" font-size="20">📡</text>
+  <text class="device-name" x="55" y="300">Eero Border Router</text>
+  <text class="device-info" x="30" y="320">Amazon/Eero • Router • LQ: </text>
+  <!-- LQ Bar -->
+  <rect class="lq-bar" x="185" y="309" width="12" height="12" rx="2"/>
+  <rect class="lq-bar" x="199" y="309" width="12" height="12" rx="2"/>
+  <rect class="lq-bar" x="213" y="309" width="12" height="12" rx="2"/>
+  <text class="device-info" x="230" y="320">Excellent</text>
+
+  <!-- Child of Router -->
+  <path class="tree-line" d="M 45 330 L 45 350 L 55 350"/>
+  <text x="60" y="355" font-size="16">💤</text>
+  <text class="child-name" x="82" y="355">Aqara Door and Window Sensor P2</text>
+  <text class="child-info" x="60" y="373">Aqara Aqara Door and Window Sensor P2</text>
+
+  <!-- Divider -->
+  <line class="divider" x1="30" y1="400" x2="570" y2="400"/>
+
+  <!-- WiFi Section -->
+  <text x="30" y="430" font-size="18">📶</text>
+  <text class="section-title" x="55" y="430">Matter over WiFi</text>
+
+  <text class="wifi-item" x="40" y="455">• <tspan font-weight="500">Smart Lock</tspan> (Nuki)</text>
+  <text class="wifi-item" x="40" y="475">• <tspan font-weight="500">WiFi Smart Switch</tspan> (SONOFF)</text>
+</svg>

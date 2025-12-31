@@ -1,7 +1,0 @@
-PLACEHOLDER: Replace this file with an actual screenshot of the Thread Topology map.
-
-To create the screenshot:
-1. Open Home Assistant dashboard with the Thread Topology markdown card
-2. Take a screenshot of the card showing the topology
-3. Save as topology-map.png in this directory
-4. Delete this .txt file
