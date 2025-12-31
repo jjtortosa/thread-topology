@@ -102,6 +102,8 @@ title: Thread Network
 content: "{{ state_attr('sensor.thread_topology_map', 'topology_text') }}"
 ```
 
+For more complete examples including stats tiles and styled cards, see the [examples/lovelace-cards.yaml](examples/lovelace-cards.yaml) file.
+
 ## How It Works
 
 1. **OTBR API**: Fetches network data from `/node` and `/diagnostics` endpoints

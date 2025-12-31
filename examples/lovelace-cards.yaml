@@ -1,0 +1,87 @@
+# Thread Network Topology - Lovelace Card Examples
+# Copy any of these configurations to your dashboard
+
+# ===========================================
+# SIMPLE: Just the topology map
+# ===========================================
+# Add this markdown card to display the full topology
+
+type: markdown
+title: Thread Network
+content: "{{ state_attr('sensor.thread_topology_map', 'topology_text') }}"
+
+# ===========================================
+# COMPLETE: Stats + Topology Map
+# ===========================================
+# Use a vertical-stack to show stats tiles above the map
+
+type: vertical-stack
+cards:
+  # Stats row
+  - type: horizontal-stack
+    cards:
+      - type: tile
+        entity: sensor.thread_network
+        name: Border Routers
+        icon: mdi:router-wireless
+        color: cyan
+        state_content: router_count
+      - type: tile
+        entity: sensor.thread_network
+        name: Thread Devices
+        icon: mdi:devices
+        color: teal
+        state_content: total_thread_devices
+      - type: tile
+        entity: sensor.thread_network
+        name: Matter Thread
+        icon: mdi:home-automation
+        color: green
+        state_content: matter_thread_devices
+      - type: tile
+        entity: sensor.thread_network
+        name: Matter WiFi
+        icon: mdi:wifi
+        color: purple
+        state_content: matter_wifi_devices
+
+  # Topology map
+  - type: markdown
+    content: "{{ state_attr('sensor.thread_topology_map', 'topology_text') }}"
+
+# ===========================================
+# STYLED: With monospace font (requires card-mod)
+# ===========================================
+# If you have card-mod installed via HACS, you can style the topology
+
+type: markdown
+content: "{{ state_attr('sensor.thread_topology_map', 'topology_text') }}"
+card_mod:
+  style: |
+    ha-card {
+      background: var(--card-background-color);
+    }
+    ha-markdown {
+      font-family: monospace;
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+# ===========================================
+# INDIVIDUAL ROUTER TILES
+# ===========================================
+# Each border router gets its own sensor. Replace with your actual sensor names.
+# Check Developer Tools > States for your router sensors (sensor.thread_node_XXXX)
+
+type: horizontal-stack
+cards:
+  - type: tile
+    entity: sensor.thread_node_3f0b  # Replace with your sensor
+    name: SkyConnect (Leader)
+    icon: mdi:crown
+    color: amber
+  - type: tile
+    entity: sensor.thread_node_ea17  # Replace with your sensor
+    name: Eero Border Router
+    icon: mdi:router-wireless
+    color: blue
