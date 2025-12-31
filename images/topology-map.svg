@@ -1,89 +1,260 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="600" height="520" viewBox="0 0 600 520">
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="700" viewBox="0 0 800 700">
   <defs>
-    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.15"/>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-opacity="0.3"/>
     </filter>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2d2d2d"/>
+      <stop offset="100%" style="stop-color:#1a1a1a"/>
+    </linearGradient>
+    <linearGradient id="leaderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffd700"/>
+      <stop offset="100%" style="stop-color:#ff8c00"/>
+    </linearGradient>
+    <linearGradient id="routerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#03a9f4"/>
+      <stop offset="100%" style="stop-color:#0277bd"/>
+    </linearGradient>
+    <linearGradient id="threadGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00bcd4"/>
+      <stop offset="100%" style="stop-color:#006064"/>
+    </linearGradient>
+    <linearGradient id="wifiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#9c27b0"/>
+      <stop offset="100%" style="stop-color:#6a1b9a"/>
+    </linearGradient>
     <style>
-      .card { fill: #1c1c1c; }
-      .title { fill: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 16px; font-weight: 500; }
-      .header { fill: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 18px; font-weight: 600; }
-      .stats { fill: #9e9e9e; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; }
-      .device-name { fill: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; font-weight: 500; }
-      .device-info { fill: #9e9e9e; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; font-style: italic; }
-      .child-name { fill: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 500; }
-      .child-info { fill: #757575; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11px; font-style: italic; }
-      .section-title { fill: #9e9e9e; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 13px; font-weight: 500; }
-      .wifi-item { fill: #b0b0b0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; }
-      .lq-bar { fill: #4caf50; }
-      .lq-bar-empty { fill: #424242; }
-      .divider { stroke: #333333; stroke-width: 1; }
-      .tree-line { stroke: #424242; stroke-width: 1; fill: none; }
+      .card { fill: url(#cardGrad); }
+      .title { fill: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 22px; font-weight: 600; }
+      .subtitle { fill: #9e9e9e; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; }
+      .stat-value { fill: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 28px; font-weight: 700; }
+      .stat-label { fill: #757575; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+      .node-label { fill: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 12px; font-weight: 500; }
+      .node-sublabel { fill: #9e9e9e; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 10px; }
+      .device-label { fill: #e0e0e0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 11px; }
+      .section-title { fill: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; font-weight: 600; }
+      .lq-excellent { fill: #4caf50; }
+      .lq-good { fill: #8bc34a; }
+      .lq-fair { fill: #ffc107; }
+      .connection { stroke: #00bcd4; stroke-width: 2; fill: none; opacity: 0.6; }
+      .connection-mesh { stroke: #03a9f4; stroke-width: 1.5; stroke-dasharray: 8,4; fill: none; opacity: 0.4; }
     </style>
   </defs>
 
   <!-- Card background -->
-  <rect class="card" x="10" y="10" width="580" height="500" rx="12" ry="12" filter="url(#shadow)"/>
+  <rect class="card" x="0" y="0" width="800" height="700" rx="16" ry="16" filter="url(#shadow)"/>
 
-  <!-- Card title bar -->
-  <text class="title" x="30" y="42">🧵 Thread Network</text>
+  <!-- Header Section -->
+  <text class="title" x="30" y="45">🧵 Thread Network Topology</text>
+  <text class="subtitle" x="30" y="68">MyHome1038137341 • Real-time network visualization</text>
 
-  <!-- Divider -->
-  <line class="divider" x1="30" y1="58" x2="570" y2="58"/>
+  <!-- Stats Row -->
+  <g transform="translate(30, 90)">
+    <!-- Routers -->
+    <rect x="0" y="0" width="120" height="70" rx="10" fill="#333" opacity="0.5"/>
+    <text class="stat-value" x="60" y="38" text-anchor="middle">3</text>
+    <text class="stat-label" x="60" y="55" text-anchor="middle">Border Routers</text>
 
-  <!-- Header -->
-  <text class="header" x="30" y="90">🧵 Thread Network: MyHome1038137341</text>
+    <!-- Thread Devices -->
+    <rect x="140" y="0" width="120" height="70" rx="10" fill="#333" opacity="0.5"/>
+    <text class="stat-value" x="200" y="38" text-anchor="middle">7</text>
+    <text class="stat-label" x="200" y="55" text-anchor="middle">Thread Devices</text>
 
-  <!-- Stats -->
-  <text class="stats" x="30" y="115">
-    <tspan font-weight="600" fill="#ffffff">Routers:</tspan> 2 |
-    <tspan font-weight="600" fill="#ffffff">Thread Devices:</tspan> 4
-  </text>
-  <text class="stats" x="30" y="135">
-    <tspan font-weight="600" fill="#ffffff">Matter:</tspan> 3 Thread + 2 WiFi
-  </text>
+    <!-- Matter Thread -->
+    <rect x="280" y="0" width="120" height="70" rx="10" fill="#00696b" opacity="0.3"/>
+    <text class="stat-value" x="340" y="38" text-anchor="middle" fill="#00bcd4">5</text>
+    <text class="stat-label" x="340" y="55" text-anchor="middle" fill="#00838f">Matter Thread</text>
 
-  <!-- Divider -->
-  <line class="divider" x1="30" y1="155" x2="570" y2="155"/>
+    <!-- Matter WiFi -->
+    <rect x="420" y="0" width="120" height="70" rx="10" fill="#4a148c" opacity="0.3"/>
+    <text class="stat-value" x="480" y="38" text-anchor="middle" fill="#ce93d8">2</text>
+    <text class="stat-label" x="480" y="55" text-anchor="middle" fill="#8e24aa">Matter WiFi</text>
 
-  <!-- Leader Node -->
-  <text x="30" y="185" font-size="20">👑</text>
-  <text class="device-name" x="55" y="185">SkyConnect (OTBR)</text>
-  <text class="device-info" x="30" y="205">Nabu Casa • Leader • LQ: </text>
-  <!-- LQ Bar -->
-  <rect class="lq-bar" x="175" y="194" width="12" height="12" rx="2"/>
-  <rect class="lq-bar" x="189" y="194" width="12" height="12" rx="2"/>
-  <rect class="lq-bar" x="203" y="194" width="12" height="12" rx="2"/>
-  <text class="device-info" x="220" y="205">Excellent</text>
-
-  <!-- Child of Leader -->
-  <path class="tree-line" d="M 45 215 L 45 235 L 55 235"/>
-  <text x="60" y="240" font-size="16">💤</text>
-  <text class="child-name" x="82" y="240">Smart Presence Sensor</text>
-  <text class="child-info" x="60" y="258">Meross Smart Presence Sensor</text>
-
-  <!-- Router Node -->
-  <text x="30" y="300" font-size="20">📡</text>
-  <text class="device-name" x="55" y="300">Eero Border Router</text>
-  <text class="device-info" x="30" y="320">Amazon/Eero • Router • LQ: </text>
-  <!-- LQ Bar -->
-  <rect class="lq-bar" x="185" y="309" width="12" height="12" rx="2"/>
-  <rect class="lq-bar" x="199" y="309" width="12" height="12" rx="2"/>
-  <rect class="lq-bar" x="213" y="309" width="12" height="12" rx="2"/>
-  <text class="device-info" x="230" y="320">Excellent</text>
-
-  <!-- Child of Router -->
-  <path class="tree-line" d="M 45 330 L 45 350 L 55 350"/>
-  <text x="60" y="355" font-size="16">💤</text>
-  <text class="child-name" x="82" y="355">Aqara Door and Window Sensor P2</text>
-  <text class="child-info" x="60" y="373">Aqara Aqara Door and Window Sensor P2</text>
+    <!-- Link Quality -->
+    <rect x="560" y="0" width="200" height="70" rx="10" fill="#1b5e20" opacity="0.2"/>
+    <text class="stat-label" x="660" y="20" text-anchor="middle" fill="#4caf50">AVG LINK QUALITY</text>
+    <rect x="580" y="35" width="40" height="20" rx="3" class="lq-excellent"/>
+    <rect x="625" y="35" width="40" height="20" rx="3" class="lq-excellent"/>
+    <rect x="670" y="35" width="40" height="20" rx="3" class="lq-excellent"/>
+    <text x="720" y="50" fill="#4caf50" font-size="12" font-weight="600" font-family="sans-serif">Excellent</text>
+  </g>
 
   <!-- Divider -->
-  <line class="divider" x1="30" y1="400" x2="570" y2="400"/>
+  <line x1="30" y1="175" x2="770" y2="175" stroke="#333" stroke-width="1"/>
+
+  <!-- Network Topology Diagram -->
+
+  <!-- Connection Lines (behind nodes) -->
+  <!-- Leader to Routers -->
+  <path class="connection" d="M 400 250 Q 300 280 200 320"/>
+  <path class="connection" d="M 400 250 Q 400 290 400 320"/>
+  <path class="connection" d="M 400 250 Q 500 280 600 320"/>
+
+  <!-- Router mesh connections -->
+  <path class="connection-mesh" d="M 200 360 Q 300 380 400 360"/>
+  <path class="connection-mesh" d="M 400 360 Q 500 380 600 360"/>
+
+  <!-- Leader to end devices -->
+  <path class="connection" d="M 400 280 L 320 420" opacity="0.4"/>
+  <path class="connection" d="M 400 280 L 480 420" opacity="0.4"/>
+
+  <!-- Router 1 to end devices -->
+  <path class="connection" d="M 200 360 L 120 460" opacity="0.4"/>
+  <path class="connection" d="M 200 360 L 200 460" opacity="0.4"/>
+
+  <!-- Router 2 to end devices -->
+  <path class="connection" d="M 400 360 L 400 460" opacity="0.4"/>
+
+  <!-- Router 3 to end devices -->
+  <path class="connection" d="M 600 360 L 600 460" opacity="0.4"/>
+  <path class="connection" d="M 600 360 L 680 460" opacity="0.4"/>
+
+  <!-- LEADER NODE -->
+  <g transform="translate(400, 230)" filter="url(#glow)">
+    <circle cx="0" cy="0" r="45" fill="url(#leaderGrad)" opacity="0.2"/>
+    <circle cx="0" cy="0" r="35" fill="url(#leaderGrad)"/>
+    <text x="0" y="8" text-anchor="middle" font-size="28">👑</text>
+  </g>
+  <text class="node-label" x="400" y="290" text-anchor="middle">SkyConnect (OTBR)</text>
+  <text class="node-sublabel" x="400" y="304" text-anchor="middle">Leader • Nabu Casa</text>
+
+  <!-- ROUTER 1 - Eero -->
+  <g transform="translate(200, 340)">
+    <circle cx="0" cy="0" r="32" fill="url(#routerGrad)" opacity="0.2"/>
+    <circle cx="0" cy="0" r="25" fill="url(#routerGrad)"/>
+    <text x="0" y="7" text-anchor="middle" font-size="20">📡</text>
+  </g>
+  <text class="node-label" x="200" y="382" text-anchor="middle">Eero Pro 6</text>
+  <text class="node-sublabel" x="200" y="395" text-anchor="middle">Router • Ground Floor</text>
+
+  <!-- ROUTER 2 - Apple -->
+  <g transform="translate(400, 340)">
+    <circle cx="0" cy="0" r="32" fill="url(#routerGrad)" opacity="0.2"/>
+    <circle cx="0" cy="0" r="25" fill="url(#routerGrad)"/>
+    <text x="0" y="7" text-anchor="middle" font-size="20">📡</text>
+  </g>
+  <text class="node-label" x="400" y="382" text-anchor="middle">HomePod Mini</text>
+  <text class="node-sublabel" x="400" y="395" text-anchor="middle">Router • Living Room</text>
+
+  <!-- ROUTER 3 - Eero -->
+  <g transform="translate(600, 340)">
+    <circle cx="0" cy="0" r="32" fill="url(#routerGrad)" opacity="0.2"/>
+    <circle cx="0" cy="0" r="25" fill="url(#routerGrad)"/>
+    <text x="0" y="7" text-anchor="middle" font-size="20">📡</text>
+  </g>
+  <text class="node-label" x="600" y="382" text-anchor="middle">Eero Pro 6</text>
+  <text class="node-sublabel" x="600" y="395" text-anchor="middle">Router • First Floor</text>
+
+  <!-- END DEVICES -->
+
+  <!-- Device 1 - Under Eero 1 -->
+  <g transform="translate(120, 480)">
+    <circle cx="0" cy="0" r="22" fill="url(#threadGrad)" opacity="0.15"/>
+    <circle cx="0" cy="0" r="16" fill="url(#threadGrad)"/>
+    <text x="0" y="5" text-anchor="middle" font-size="14">💤</text>
+  </g>
+  <text class="device-label" x="120" y="512" text-anchor="middle">Aqara Sensor P2</text>
+  <text class="node-sublabel" x="120" y="524" text-anchor="middle">Door • Garage</text>
+
+  <!-- Device 2 - Under Eero 1 -->
+  <g transform="translate(200, 480)">
+    <circle cx="0" cy="0" r="22" fill="url(#threadGrad)" opacity="0.15"/>
+    <circle cx="0" cy="0" r="16" fill="url(#threadGrad)"/>
+    <text x="0" y="5" text-anchor="middle" font-size="14">💤</text>
+  </g>
+  <text class="device-label" x="200" y="512" text-anchor="middle">Eve Motion</text>
+  <text class="node-sublabel" x="200" y="524" text-anchor="middle">Motion • Hallway</text>
+
+  <!-- Device 3 - Under Leader -->
+  <g transform="translate(320, 440)">
+    <circle cx="0" cy="0" r="22" fill="url(#threadGrad)" opacity="0.15"/>
+    <circle cx="0" cy="0" r="16" fill="url(#threadGrad)"/>
+    <text x="0" y="5" text-anchor="middle" font-size="14">💤</text>
+  </g>
+  <text class="device-label" x="320" y="472" text-anchor="middle">Meross MS605</text>
+  <text class="node-sublabel" x="320" y="484" text-anchor="middle">Presence • Bathroom</text>
+
+  <!-- Device 4 - Under Leader -->
+  <g transform="translate(480, 440)">
+    <circle cx="0" cy="0" r="22" fill="url(#threadGrad)" opacity="0.15"/>
+    <circle cx="0" cy="0" r="16" fill="url(#threadGrad)"/>
+    <text x="0" y="5" text-anchor="middle" font-size="14">🔋</text>
+  </g>
+  <text class="device-label" x="480" y="472" text-anchor="middle">Nanoleaf Button</text>
+  <text class="node-sublabel" x="480" y="484" text-anchor="middle">Button • Bedroom</text>
+
+  <!-- Device 5 - Under HomePod -->
+  <g transform="translate(400, 480)">
+    <circle cx="0" cy="0" r="22" fill="url(#threadGrad)" opacity="0.15"/>
+    <circle cx="0" cy="0" r="16" fill="url(#threadGrad)"/>
+    <text x="0" y="5" text-anchor="middle" font-size="14">🌡️</text>
+  </g>
+  <text class="device-label" x="400" y="512" text-anchor="middle">Eve Weather</text>
+  <text class="node-sublabel" x="400" y="524" text-anchor="middle">Climate • Terrace</text>
+
+  <!-- Device 6 - Under Eero 2 -->
+  <g transform="translate(600, 480)">
+    <circle cx="0" cy="0" r="22" fill="url(#threadGrad)" opacity="0.15"/>
+    <circle cx="0" cy="0" r="16" fill="url(#threadGrad)"/>
+    <text x="0" y="5" text-anchor="middle" font-size="14">💤</text>
+  </g>
+  <text class="device-label" x="600" y="512" text-anchor="middle">Aqara Sensor P2</text>
+  <text class="node-sublabel" x="600" y="524" text-anchor="middle">Window • Office</text>
+
+  <!-- Device 7 - Under Eero 2 -->
+  <g transform="translate(680, 480)">
+    <circle cx="0" cy="0" r="22" fill="url(#threadGrad)" opacity="0.15"/>
+    <circle cx="0" cy="0" r="16" fill="url(#threadGrad)"/>
+    <text x="0" y="5" text-anchor="middle" font-size="14">💡</text>
+  </g>
+  <text class="device-label" x="680" y="512" text-anchor="middle">Nanoleaf Bulb</text>
+  <text class="node-sublabel" x="680" y="524" text-anchor="middle">Light • Kids Room</text>
+
+  <!-- Divider -->
+  <line x1="30" y1="555" x2="770" y2="555" stroke="#333" stroke-width="1"/>
 
   <!-- WiFi Section -->
-  <text x="30" y="430" font-size="18">📶</text>
-  <text class="section-title" x="55" y="430">Matter over WiFi</text>
+  <text class="section-title" x="30" y="585">📶 Matter over WiFi</text>
 
-  <text class="wifi-item" x="40" y="455">• <tspan font-weight="500">Smart Lock</tspan> (Nuki)</text>
-  <text class="wifi-item" x="40" y="475">• <tspan font-weight="500">WiFi Smart Switch</tspan> (SONOFF)</text>
+  <!-- WiFi Device 1 -->
+  <g transform="translate(60, 630)">
+    <rect x="-40" y="-25" width="140" height="50" rx="8" fill="url(#wifiGrad)" opacity="0.2"/>
+    <text x="0" y="-5" font-size="18">🔐</text>
+    <text class="device-label" x="30" y="-2">Nuki Smart Lock</text>
+    <text class="node-sublabel" x="30" y="12">Lock • Front Door</text>
+  </g>
+
+  <!-- WiFi Device 2 -->
+  <g transform="translate(230, 630)">
+    <rect x="-40" y="-25" width="160" height="50" rx="8" fill="url(#wifiGrad)" opacity="0.2"/>
+    <text x="0" y="-5" font-size="18">🔌</text>
+    <text class="device-label" x="30" y="-2">SONOFF Smart Switch</text>
+    <text class="node-sublabel" x="30" y="12">Switch • Kitchen</text>
+  </g>
+
+  <!-- Legend -->
+  <g transform="translate(550, 590)">
+    <text class="node-sublabel" x="0" y="0">LEGEND</text>
+    <circle cx="15" cy="20" r="8" fill="url(#leaderGrad)"/>
+    <text class="node-sublabel" x="30" y="24">Leader</text>
+    <circle cx="85" cy="20" r="8" fill="url(#routerGrad)"/>
+    <text class="node-sublabel" x="100" y="24">Router</text>
+    <circle cx="165" cy="20" r="8" fill="url(#threadGrad)"/>
+    <text class="node-sublabel" x="180" y="24">End Device</text>
+  </g>
+
+  <!-- Connection Legend -->
+  <g transform="translate(550, 640)">
+    <line x1="0" y1="10" x2="40" y2="10" stroke="#00bcd4" stroke-width="2" opacity="0.6"/>
+    <text class="node-sublabel" x="50" y="14">Parent-Child</text>
+    <line x1="120" y1="10" x2="160" y2="10" stroke="#03a9f4" stroke-width="1.5" stroke-dasharray="8,4" opacity="0.4"/>
+    <text class="node-sublabel" x="170" y="14">Mesh Link</text>
+  </g>
 </svg>
