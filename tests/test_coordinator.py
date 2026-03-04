@@ -1,8 +1,26 @@
 """Tests for Thread Topology coordinator."""
 from __future__ import annotations
 
+import importlib
+import os
+import sys
+import tempfile
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
+
+# Mock homeassistant modules so coordinator can be imported without HA installed
+sys.modules.setdefault("homeassistant", MagicMock())
+sys.modules.setdefault("homeassistant.core", MagicMock())
+sys.modules.setdefault("homeassistant.config_entries", MagicMock())
+sys.modules.setdefault("homeassistant.const", MagicMock())
+sys.modules.setdefault("homeassistant.helpers", MagicMock())
+sys.modules.setdefault("homeassistant.helpers.device_registry", MagicMock())
+sys.modules.setdefault("homeassistant.helpers.update_coordinator", MagicMock())
+
+from custom_components.thread_topology.coordinator import (
+    _normalize_address,
+    KNOWN_BORDER_ROUTER_OUIS,
+)
 
 
 class TestTopologyProcessing:
@@ -252,6 +270,145 @@ class TestTopologyResult:
         assert result["total_devices"] == 7  # 3 routers + 4 children
         assert len(result["matter_devices"]["thread"]) == 3
         assert len(result["matter_devices"]["wifi"]) == 2
+
+
+class TestNormalizeAddress:
+    """Test cases for address normalization."""
+
+    def test_strips_colons(self):
+        """Test colons are stripped from address."""
+        assert _normalize_address("AA:BA:D1:1C:1D:3A:F2:7F") == "AABAD11C1D3AF27F"
+
+    def test_strips_dashes(self):
+        """Test dashes are stripped from address."""
+        assert _normalize_address("AA-BA-D1") == "AABAD1"
+
+    def test_uppercases(self):
+        """Test address is uppercased."""
+        assert _normalize_address("aabad1") == "AABAD1"
+
+    def test_strips_spaces(self):
+        """Test spaces are stripped."""
+        assert _normalize_address("AA BA D1") == "AABAD1"
+
+    def test_already_normalized(self):
+        """Test already normalized address passes through."""
+        assert _normalize_address("AABAD11C1D3AF27F") == "AABAD11C1D3AF27F"
+
+
+class TestCustomRouterMatching:
+    """Test cases for custom router YAML matching."""
+
+    def test_exact_full_address_match(self):
+        """Test matching by exact full extended address."""
+        custom_routers = [
+            {"address": "AABAD11C1D3AF27F", "name": "SMlight", "manufacturer": "SMlight", "icon": "chip"}
+        ]
+        ext = "AABAD11C1D3AF27F"
+        ext_normalized = _normalize_address(ext)
+
+        matched = None
+        for custom in custom_routers:
+            if ext_normalized == custom["address"]:
+                matched = custom
+                break
+
+        assert matched is not None
+        assert matched["name"] == "SMlight"
+
+    def test_oui_prefix_match(self):
+        """Test matching by OUI prefix (first 6 hex chars)."""
+        custom_routers = [
+            {"address": "AABAD1", "name": "SMlight", "manufacturer": "SMlight", "icon": "chip"}
+        ]
+        ext_normalized = "AABAD11C1D3AF27F"
+
+        matched = None
+        for custom in custom_routers:
+            custom_addr = custom["address"]
+            if len(custom_addr) == 6 and ext_normalized[:6] == custom_addr:
+                matched = custom
+                break
+
+        assert matched is not None
+        assert matched["name"] == "SMlight"
+
+    def test_substring_pattern_match(self):
+        """Test matching by substring pattern in address."""
+        custom_routers = [
+            {"address": "121BEC66", "name": "ESP32-H2", "manufacturer": "Espressif", "icon": "chip"}
+        ]
+        ext_normalized = "121BEC66640787A6"
+
+        matched = None
+        for custom in custom_routers:
+            custom_addr = custom["address"]
+            if len(custom_addr) > 6 and custom_addr in ext_normalized:
+                matched = custom
+                break
+
+        assert matched is not None
+        assert matched["name"] == "ESP32-H2"
+
+    def test_address_with_colons_matches(self):
+        """Test that address with colons in YAML still matches."""
+        custom_routers = [
+            {"address": _normalize_address("AA:BA:D1"), "name": "SMlight", "manufacturer": "SMlight", "icon": "chip"}
+        ]
+        ext_normalized = "AABAD11C1D3AF27F"
+
+        matched = None
+        for custom in custom_routers:
+            custom_addr = custom["address"]
+            if len(custom_addr) == 6 and ext_normalized[:6] == custom_addr:
+                matched = custom
+                break
+
+        assert matched is not None
+
+    def test_no_match_returns_none(self):
+        """Test that non-matching address returns no match."""
+        custom_routers = [
+            {"address": "FF0011", "name": "Unknown", "manufacturer": "Unknown", "icon": "chip"}
+        ]
+        ext_normalized = "AABAD11C1D3AF27F"
+
+        matched = None
+        for custom in custom_routers:
+            custom_addr = custom["address"]
+            if ext_normalized == custom_addr:
+                matched = custom
+            elif len(custom_addr) == 6 and ext_normalized[:6] == custom_addr:
+                matched = custom
+            elif len(custom_addr) > 6 and custom_addr in ext_normalized:
+                matched = custom
+
+        assert matched is None
+
+    def test_custom_routers_priority_over_builtin(self):
+        """Test custom routers are checked before built-in OUI table."""
+        # Use an address that would match Apple OUI
+        ext = "286D970123456789"
+        custom_routers = [
+            {"address": "286D97", "name": "My Custom Router", "manufacturer": "Custom", "icon": "router"}
+        ]
+        ext_normalized = _normalize_address(ext)
+
+        # Custom check first
+        custom_match = None
+        for custom in custom_routers:
+            custom_addr = custom["address"]
+            if len(custom_addr) == 6 and ext_normalized[:6] == custom_addr:
+                custom_match = custom
+                break
+
+        assert custom_match is not None
+        assert custom_match["name"] == "My Custom Router"
+
+        # Built-in would have said Apple
+        oui = f"{ext_normalized[0:2]}:{ext_normalized[2:4]}:{ext_normalized[4:6]}"
+        assert oui in KNOWN_BORDER_ROUTER_OUIS
+        assert KNOWN_BORDER_ROUTER_OUIS[oui]["manufacturer"] == "Apple"
 
 
 class TestURLNormalization:

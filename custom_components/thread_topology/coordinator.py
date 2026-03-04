@@ -5,9 +5,11 @@ import asyncio
 import logging
 import os
 from datetime import timedelta
+from pathlib import Path
 from typing import Any
 
 import aiohttp
+import yaml
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
@@ -21,6 +23,8 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+CUSTOM_ROUTERS_FILE = "custom_routers.yaml"
 
 # Known Thread Border Router OUI prefixes (first 6 chars of extended address)
 # These are based on IEEE OUI database and known devices
@@ -77,6 +81,11 @@ BORDER_ROUTER_PATTERNS = [
 ]
 
 
+def _normalize_address(address: str) -> str:
+    """Normalize an extended address by stripping separators and uppercasing."""
+    return address.replace(":", "").replace("-", "").replace(" ", "").upper()
+
+
 class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Coordinator to fetch Thread topology data from OTBR."""
 
@@ -96,6 +105,50 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.otbr_url = otbr_url.rstrip("/")
         self._session: aiohttp.ClientSession | None = None
         self._router_index = 0  # Track router numbering
+        self._custom_routers: list[dict[str, str]] = self._load_custom_routers()
+
+    def _load_custom_routers(self) -> list[dict[str, str]]:
+        """Load user-defined border routers from custom_routers.yaml."""
+        config_dir = Path(__file__).parent
+        yaml_path = config_dir / CUSTOM_ROUTERS_FILE
+
+        if not yaml_path.exists():
+            return []
+
+        try:
+            with open(yaml_path, encoding="utf-8") as f:
+                data = yaml.safe_load(f)
+
+            if not data or "routers" not in data:
+                return []
+
+            routers = []
+            for entry in data["routers"]:
+                address = entry.get("address", "")
+                name = entry.get("name", "Custom Router")
+                manufacturer = entry.get("manufacturer", "Unknown")
+                icon = entry.get("icon", "router")
+
+                if not address:
+                    _LOGGER.warning("Skipping custom router entry with no address")
+                    continue
+
+                routers.append({
+                    "address": _normalize_address(address),
+                    "name": name,
+                    "manufacturer": manufacturer,
+                    "icon": icon,
+                })
+
+            _LOGGER.info("Loaded %d custom router(s) from %s", len(routers), yaml_path)
+            return routers
+
+        except yaml.YAMLError as err:
+            _LOGGER.error("Error parsing %s: %s", yaml_path, err)
+            return []
+        except OSError as err:
+            _LOGGER.error("Error reading %s: %s", yaml_path, err)
+            return []
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from OTBR API."""
@@ -209,13 +262,30 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 "icon": "home-assistant",
             }
 
+        ext_normalized = _normalize_address(ext_address)
+
+        # Check custom routers first (user-defined in custom_routers.yaml)
+        for custom in self._custom_routers:
+            custom_addr = custom["address"]
+            # Exact full match, OUI prefix match (first 6 hex chars), or substring
+            if (
+                ext_normalized == custom_addr
+                or (len(custom_addr) == 6 and ext_normalized[:6] == custom_addr)
+                or (len(custom_addr) > 6 and custom_addr in ext_normalized)
+            ):
+                return {
+                    "name": custom["name"],
+                    "manufacturer": custom["manufacturer"],
+                    "type": "border_router",
+                    "icon": custom.get("icon", "router"),
+                }
+
         # Convert extended address to OUI format (XX:XX:XX)
-        ext_upper = ext_address.upper()
-        if len(ext_upper) >= 6:
+        if len(ext_normalized) >= 6:
             # Try different OUI formats
             oui_formats = [
-                f"{ext_upper[0:2]}:{ext_upper[2:4]}:{ext_upper[4:6]}",  # Standard
-                f"{ext_upper[-6:-4]}:{ext_upper[-4:-2]}:{ext_upper[-2:]}",  # Last 6
+                f"{ext_normalized[0:2]}:{ext_normalized[2:4]}:{ext_normalized[4:6]}",
+                f"{ext_normalized[-6:-4]}:{ext_normalized[-4:-2]}:{ext_normalized[-2:]}",
             ]
 
             for oui in oui_formats:
@@ -230,7 +300,7 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         # Check for pattern matches in the address
         for pattern, name, manufacturer in BORDER_ROUTER_PATTERNS:
-            if pattern in ext_upper:
+            if pattern in ext_normalized:
                 return {
                     "name": name,
                     "manufacturer": manufacturer,

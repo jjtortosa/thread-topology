@@ -1,0 +1,35 @@
+# Thread Topology - Custom Border Router Configuration
+#
+# Copy this file to 'custom_routers.yaml' (same directory) and edit it
+# to identify your border routers that aren't auto-detected.
+#
+# How to find your router's extended address:
+#   1. Go to Settings > Devices & Services > Thread
+#   2. Click on your border router
+#   3. Look for "Extended Address" (e.g., AABAD11C1D3AF27F)
+#
+# Address formats (all are accepted):
+#   - Full address:  "AABAD11C1D3AF27F" or "AA:BA:D1:1C:1D:3A:F2:7F"
+#   - OUI prefix:    "AABAD1" or "AA:BA:D1" (first 3 bytes, matches any device with this prefix)
+#   - Partial match: "121BEC" (matches anywhere in the address)
+#
+# Icon options: chip, router, home-assistant, homepod, nest, eero, smartthings, nanoleaf, apple
+
+routers:
+  # Example: SMlight SLZB-06/07 border router
+  # - address: "AA:BA:D1"
+  #   name: "SMlight OTBR"
+  #   manufacturer: "SMlight"
+  #   icon: "chip"
+
+  # Example: ESP32-H2 Thread border router (full address)
+  # - address: "121BEC66640787A6"
+  #   name: "ESP32-H2 Router"
+  #   manufacturer: "Espressif"
+  #   icon: "chip"
+
+  # Example: Nordic nRF52840 dongle
+  # - address: "F8:F0:05"
+  #   name: "nRF52840 Dongle"
+  #   manufacturer: "Nordic Semiconductor"
+  #   icon: "chip"

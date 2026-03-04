@@ -118,7 +118,69 @@ The integration automatically identifies:
 - **Amazon Eero** mesh routers
 - **Apple HomePod** / HomePod Mini
 - **Google Nest** Hub / WiFi
-- Other Thread Border Routers
+- **Samsung SmartThings** Hub / Station
+- **Silicon Labs** dev boards
+- **Espressif** ESP32-H2 Thread devices
+- **Nordic Semiconductor** nRF52/nRF53 devices
+- **Nanoleaf** controllers
+
+### How Detection Works
+
+Routers are identified using the **OUI prefix** (first 3 bytes) of their Thread extended address. For example, a device with extended address `AABAD11C1D3AF27F` has OUI `AA:BA:D1`.
+
+The integration checks in this order:
+1. **Leader** — the OTBR leader is always identified as "SkyConnect (OTBR)"
+2. **Custom routers** — user-defined in `custom_routers.yaml` (see below)
+3. **Built-in OUI table** — ~30 known manufacturer prefixes
+4. **Pattern matching** — substring patterns for specific devices
+5. **Generic fallback** — numbered "Thread Router" names
+
+### Custom Border Router Configuration
+
+If your border routers aren't automatically detected, you can define them in a YAML file.
+
+1. Copy the example file:
+   ```bash
+   cd custom_components/thread_topology/
+   cp custom_routers.example.yaml custom_routers.yaml
+   ```
+
+2. Edit `custom_routers.yaml` with your devices:
+   ```yaml
+   routers:
+     - address: "AA:BA:D1"
+       name: "SMlight OTBR"
+       manufacturer: "SMlight"
+       icon: "chip"
+
+     - address: "121BEC66640787A6"
+       name: "ESP32-H2 Router"
+       manufacturer: "Espressif"
+       icon: "chip"
+   ```
+
+3. Restart Home Assistant (or reload the integration)
+
+#### Finding Your Router's Extended Address
+
+1. Go to **Settings** → **Devices & Services** → **Thread**
+2. Click on your border router
+3. Look for **Extended Address** (e.g., `AABAD11C1D3AF27F`)
+
+#### Supported Address Formats
+
+All formats are accepted and automatically normalized:
+
+| Format | Example | Matches |
+|--------|---------|---------|
+| Full address | `AABAD11C1D3AF27F` | Exact device only |
+| Full with colons | `AA:BA:D1:1C:1D:3A:F2:7F` | Exact device only |
+| OUI prefix (3 bytes) | `AABAD1` or `AA:BA:D1` | Any device from this manufacturer |
+| Partial pattern | `121BEC` | Any address containing this string |
+
+#### Available Icons
+
+`chip`, `router`, `home-assistant`, `homepod`, `nest`, `eero`, `smartthings`, `nanoleaf`, `apple`
 
 ## Troubleshooting
 
