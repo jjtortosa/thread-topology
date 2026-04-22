@@ -15,6 +15,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
+# Optional import - Matter integration may not be loaded
+try:
+    from homeassistant.components.matter.helpers import get_matter
+    _MATTER_AVAILABLE = True
+except ImportError:
+    _MATTER_AVAILABLE = False
+
 from .const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
@@ -194,35 +201,131 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return await response.json()
 
     def _get_matter_devices(self) -> list[dict[str, Any]]:
-        """Get Matter devices from Home Assistant device registry."""
+        """Get Matter devices from Home Assistant device registry.
+
+        Also pulls each device's Thread Extended Address (EUI-64) and current
+        IPv6 addresses from matter-server's NodeDiagnostics, so that downstream
+        matching can use the actual hardware address instead of iteration order.
+        """
         device_registry = dr.async_get(self.hass)
         matter_devices = []
 
+        # Build {node_id: (mac_address, [ip_addresses])} from matter-server, if available.
+        # We read this synchronously from cached cluster attributes rather than
+        # calling the async client.node_diagnostics(), because we're in a sync method.
+        node_info_by_id: dict[int, tuple[str | None, list[str]]] = {}
+        if _MATTER_AVAILABLE:
+            try:
+                # Lazy-import here so this module still imports if Matter integration
+                # is missing optional deps in some HA setups.
+                import base64  # noqa: PLC0415
+                from chip.clusters import Objects as Clusters  # noqa: PLC0415
+
+                matter_adapter = get_matter(self.hass)
+                attribute = Clusters.GeneralDiagnostics.Attributes.NetworkInterfaces
+                thread_iface_type = (
+                    Clusters.GeneralDiagnostics.Enums.InterfaceTypeEnum.kThread
+                )
+
+                for node in matter_adapter.matter_client.get_nodes():
+                    mac: str | None = None
+                    interfaces = node.get_attribute_value(
+                        0, cluster=None, attribute=attribute
+                    ) or []
+                    for iface in interfaces:
+                        # Find the operational Thread interface (or fall back to
+                        # any operational one if no Thread interface present).
+                        if not getattr(iface, "isOperational", True):
+                            continue
+                        hw_addr = getattr(iface, "hardwareAddress", None)
+                        if not hw_addr:
+                            continue
+                        # convert_mac_address logic: base64-decode if str, then
+                        # format as colon-separated hex.
+                        if isinstance(hw_addr, str):
+                            try:
+                                hw_addr = base64.b64decode(hw_addr)
+                            except (ValueError, TypeError):
+                                continue
+                        try:
+                            mac = ":".join(f"{b:02x}" for b in hw_addr)
+                        except (TypeError, ValueError):
+                            continue
+                        # Prefer the Thread interface if there is one; otherwise
+                        # take the first operational interface we find.
+                        if getattr(iface, "type", None) == thread_iface_type:
+                            break
+
+                    # IPs come from the same NetworkInterfaces struct.
+                    ips: list[str] = []
+                    for iface in interfaces:
+                        for ip_bytes in getattr(iface, "iPv6Addresses", []) or []:
+                            if isinstance(ip_bytes, str):
+                                try:
+                                    ip_bytes = base64.b64decode(ip_bytes)
+                                except (ValueError, TypeError):
+                                    continue
+                            # Format raw 16-byte IPv6 as standard string.
+                            if isinstance(ip_bytes, (bytes, bytearray)) and len(ip_bytes) == 16:
+                                import ipaddress  # noqa: PLC0415
+                                try:
+                                    ips.append(str(ipaddress.IPv6Address(bytes(ip_bytes))))
+                                except (ValueError, TypeError):
+                                    pass
+
+                    node_info_by_id[node.node_id] = (mac, ips)
+            except (KeyError, StopIteration, AttributeError, ImportError) as err:
+                _LOGGER.debug("Could not query Matter client for node diagnostics: %s", err)
+
         for device in device_registry.devices.values():
-            # Check if device has matter identifier
+            # Find the "matter" identifier on this device, if any.
+            matter_identifier_value: str | None = None
             for identifier in device.identifiers:
                 if identifier[0] == "matter":
-                    # Determine transport type based on model name
-                    model = (device.model or "").lower()
-                    manufacturer = (device.manufacturer or "").lower()
-                    name = device.name or "Unknown"
-
-                    # Detect WiFi vs Thread transport
-                    transport = "thread"  # Default to Thread
-                    if "wifi" in model or "wifi" in name.lower():
-                        transport = "wifi"
-                    elif manufacturer in ["nuki", "wemo", "lifx"]:
-                        # These typically use WiFi bridge for Matter
-                        transport = "wifi"
-
-                    matter_devices.append({
-                        "name": name,
-                        "model": device.model,
-                        "manufacturer": device.manufacturer,
-                        "identifiers": list(device.identifiers),
-                        "transport": transport,
-                    })
+                    matter_identifier_value = identifier[1]
                     break
+            if matter_identifier_value is None:
+                continue
+
+            # Determine transport type based on model name
+            model = (device.model or "").lower()
+            manufacturer = (device.manufacturer or "").lower()
+            name = device.name or "Unknown"
+
+            # Detect WiFi vs Thread transport
+            transport = "thread"  # Default to Thread
+            if "wifi" in model or "wifi" in name.lower():
+                transport = "wifi"
+            elif manufacturer in ["nuki", "wemo", "lifx"]:
+                transport = "wifi"
+
+            # Look up mac/IPs by parsing the node ID out of the Matter identifier.
+            # HA stores it as e.g. "deviceid_<fabric_hex>-<node_hex>-MatterNodeDevice".
+            mac_address: str | None = None
+            ip_addresses: list[str] = []
+            try:
+                # Strip the leading type prefix and split on dashes.
+                # node_id is the second hex segment.
+                stripped = matter_identifier_value
+                if stripped.startswith("deviceid_"):
+                    stripped = stripped[len("deviceid_"):]
+                parts = stripped.split("-")
+                if len(parts) >= 2:
+                    node_id = int(parts[1], 16)
+                    if node_id in node_info_by_id:
+                        mac_address, ip_addresses = node_info_by_id[node_id]
+            except (ValueError, IndexError):
+                pass
+
+            matter_devices.append({
+                "name": name,
+                "model": device.model,
+                "manufacturer": device.manufacturer,
+                "identifiers": list(device.identifiers),
+                "transport": transport,
+                "ext_address": _normalize_address(mac_address) if mac_address else None,
+                "ip_addresses": ip_addresses,
+            })
 
         return matter_devices
 
@@ -330,16 +433,43 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         }
 
     def _match_end_device(
-        self, parent_rloc: int, child_idx: int, matter_devices: list[dict]
+        self,
+        parent_rloc: int,
+        child_idx: int,
+        matter_devices: list[dict],
+        claimed_ext_addresses: set[str],
+        child_ip6_addresses: list[str] | None = None,
     ) -> dict[str, Any] | None:
-        """Try to match an end device with a Matter device."""
-        # Get Thread-only Matter devices
+        """Try to match an end device with a Matter device.
+
+        Strategy:
+          1. If we have child IPv6 addresses from OTBR, match by IP overlap with
+             any Matter device's known IPs.
+          2. Otherwise, return any unclaimed Thread Matter device (i.e., one
+             whose ext_address hasn't already been bound to a router/leader).
+             This is a fallback because OTBR's ChildTable response does not
+             include the child's ExtAddress.
+        """
         thread_devices = [d for d in matter_devices if d["transport"] == "thread"]
 
-        # Simple heuristic: assign devices based on order
-        # In a real implementation, you'd need to query Matter fabric data
-        if child_idx < len(thread_devices):
-            return thread_devices[child_idx]
+        # Try IP-based matching first if we have child IPs to check.
+        if child_ip6_addresses:
+            child_ip_set = {ip.lower() for ip in child_ip6_addresses}
+            for d in thread_devices:
+                if d.get("ext_address") and d["ext_address"] in claimed_ext_addresses:
+                    continue
+                for ip in d.get("ip_addresses", []):
+                    if ip.lower() in child_ip_set:
+                        return d
+
+        # Fallback: assign the next unclaimed Thread Matter device.
+        # Filter out anything already bound to a router/leader.
+        unclaimed = [
+            d for d in thread_devices
+            if not d.get("ext_address") or d["ext_address"] not in claimed_ext_addresses
+        ]
+        if child_idx < len(unclaimed):
+            return unclaimed[child_idx]
 
         return None
 
@@ -361,19 +491,31 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         thread_matter = [d for d in matter_devices if d["transport"] == "thread"]
         wifi_matter = [d for d in matter_devices if d["transport"] == "wifi"]
 
+        # Build a lookup table: normalized ext_address -> Matter device.
+        # This lets us match Thread mesh nodes to Matter devices by EUI-64
+        # instead of by iteration order (which is what the old code did).
+        matter_by_ext_addr: dict[str, dict] = {
+            d["ext_address"]: d for d in thread_matter if d.get("ext_address")
+        }
+
+        # Track which Matter devices we've already bound to a router/leader so
+        # we don't double-assign them when matching child end-devices.
+        claimed_ext_addresses: set[str] = set()
+
         # Build nodes dictionary
         nodes: dict[str, dict] = {}
-        thread_device_idx = 0
         router_index = 0
+        leader_ext_normalized = _normalize_address(leader_ext_address)
 
         for diag in diagnostics_data:
             ext_address = diag.get("ExtAddress", "")
+            ext_normalized = _normalize_address(ext_address)
             rloc16 = diag.get("Rloc16", 0)
 
             # Determine device role
             mode = diag.get("Mode", {})
             is_router = mode.get("DeviceType", 0) == 1
-            is_leader = ext_address == leader_ext_address
+            is_leader = ext_normalized == leader_ext_normalized
 
             if is_leader:
                 role = "leader"
@@ -382,10 +524,27 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             else:
                 role = "end_device"
 
-            # Get router identification
+            # Try to match this router/leader to a Matter device by EUI-64.
+            # If found, that device's friendly name overrides the OUI-based
+            # router_info name (which only knows about a hardcoded list of OUIs).
+            matter_self_match = matter_by_ext_addr.get(ext_normalized)
+            if matter_self_match:
+                claimed_ext_addresses.add(ext_normalized)
+
+            # Get router identification (OUI lookup / custom_routers.yaml)
             router_info = self._identify_router(ext_address, is_leader, router_index)
             if role in ("leader", "router"):
                 router_index += 1
+
+            # Override OUI-based name with Matter device name if we matched.
+            if matter_self_match:
+                node_name = matter_self_match["name"]
+                node_manufacturer = (
+                    matter_self_match["manufacturer"] or router_info["manufacturer"]
+                )
+            else:
+                node_name = router_info["name"]
+                node_manufacturer = router_info["manufacturer"]
 
             # Get connectivity info
             connectivity = diag.get("Connectivity", {})
@@ -405,19 +564,27 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             else:
                 link_quality = 0
 
-            # Get children and try to match with Matter devices
+            # Get children and try to match with Matter devices.
+            # We use the new ext_address-aware matcher; if the child is a
+            # Matter device whose mac_address we already collected, prefer
+            # that match. Otherwise fall back to the next unclaimed device.
             child_table = diag.get("ChildTable", [])
             children = []
-            for child in child_table:
+            for child_idx, child in enumerate(child_table):
                 child_id = child.get("ChildId", 0)
                 child_mode = child.get("Mode", {})
                 child_type = "sleepy" if child_mode.get("RxOnWhenIdle", 1) == 0 else "active"
 
-                # Try to match with a Matter device
-                matter_match = None
-                if thread_device_idx < len(thread_matter):
-                    matter_match = thread_matter[thread_device_idx]
-                    thread_device_idx += 1
+                # OTBR's standard ChildTable response usually omits the child's
+                # ExtAddress and IP list. Pass None for IPs unless present.
+                child_ip_list = child.get("IP6AddressList") or None
+
+                matter_match = self._match_end_device(
+                    rloc16, child_idx, matter_devices,
+                    claimed_ext_addresses, child_ip_list,
+                )
+                if matter_match and matter_match.get("ext_address"):
+                    claimed_ext_addresses.add(matter_match["ext_address"])
 
                 child_info = {
                     "id": child_id,
@@ -450,8 +617,8 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 "ext_address": ext_address,
                 "rloc16": rloc16,
                 "role": role,
-                "name": router_info["name"],
-                "manufacturer": router_info["manufacturer"],
+                "name": node_name,
+                "manufacturer": node_manufacturer,
                 "device_type": router_info["type"],
                 "icon": router_info.get("icon", "router"),
                 "link_quality": link_quality,
@@ -461,6 +628,28 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 "connections": connections,
                 "ip_addresses": diag.get("IP6AddressList", []),
             }
+
+        # Surface any Matter Thread devices we never matched to the mesh,
+        # so they show up in the visualizer as "offline" rather than just
+        # disappearing. Old code did this implicitly via positional matching;
+        # we make it explicit.
+        unmatched_thread = [
+            d for d in thread_matter
+            if d.get("ext_address") and d["ext_address"] not in claimed_ext_addresses
+        ]
+        # Also include Matter Thread devices with no ext_address known
+        # (e.g., matter-server hadn't populated diagnostics yet).
+        unmatched_thread.extend(
+            d for d in thread_matter if not d.get("ext_address")
+        )
+
+        # Log a summary so users can debug matching from HA logs.
+        _LOGGER.debug(
+            "Thread topology match summary: %d mesh nodes, %d Thread Matter devices, "
+            "%d claimed by ext_address, %d unmatched",
+            len(nodes), len(thread_matter), len(claimed_ext_addresses),
+            len(unmatched_thread),
+        )
 
         return {
             "network_name": network_name,
@@ -473,6 +662,7 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 "thread": thread_matter,
                 "wifi": wifi_matter,
                 "total": len(matter_devices),
+                "unmatched_thread": unmatched_thread,
             },
             "known_routers": thread_routers,
         }
