@@ -111,15 +111,16 @@ class ThreadTopologyMapSensor(CoordinatorEntity[ThreadTopologyCoordinator], Sens
             return {}
 
         data = self.coordinator.data
-        nodes = data.get("nodes", {})
         leader = data.get("leader_address", "")
-        matter = data.get("matter_devices", {})
 
         # Build topology text with device names
         lines = []
         lines.append(f"## 🧵 Thread Network: {data.get('network_name', 'Unknown')}")
         lines.append("")
         lines.append(f"**Routers:** {data.get('router_count', 0)} | **Thread Devices:** {data.get('total_devices', 0)}")
+
+        nodes = data.get("nodes", {})
+        matter = data.get("matter_devices", {})
 
         # Add Matter summary
         thread_count = len(matter.get("thread", []))
@@ -202,9 +203,6 @@ class ThreadTopologyMapSensor(CoordinatorEntity[ThreadTopologyCoordinator], Sens
 
         return {
             "topology_text": "\n".join(lines),
-            "nodes": nodes,
-            "matter_devices": matter,
-            "raw_data": data,
         }
 
 

@@ -177,7 +177,7 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             )
 
             # Generate and save SVG to www folder
-            self.save_svg_to_www(topology)
+            await self.save_svg_to_www(topology)
 
             return topology
 
@@ -707,7 +707,7 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         svg += '</svg>'
         return svg
 
-    def save_svg_to_www(self, topology: dict[str, Any]) -> str | None:
+    async def save_svg_to_www(self, topology: dict[str, Any]) -> str | None:
         """Generate SVG and save to www folder."""
         try:
             svg_content = self.generate_svg(topology)
