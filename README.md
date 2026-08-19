@@ -1,24 +1,21 @@
 # Thread Network Topology for Home Assistant
 
-> ## ⚠️ DEPRECATED / ARCHIVED — do not use
+> ## Maintained continuation
 >
-> This integration is **no longer maintained** and has been archived.
+> This is a maintained fork of [jjtortosa/thread-topology](https://github.com/jjtortosa/thread-topology),
+> which was archived after its author concluded that Home Assistant's OpenThread Border
+> Router (OTBR) no longer exposed mesh diagnostics over REST.
 >
-> **Why it doesn't work:** it relied on the OpenThread Border Router (OTBR) REST API
-> endpoint `GET /diagnostics` to build the mesh topology. Home Assistant's OTBR build
-> (e.g. the Connect ZBT-1) **does not expose any mesh-diagnostics endpoint** (`/diagnostics`
-> returns HTTP 404) and only serves `/node/*`. The REST API also switched its JSON keys
-> from PascalCase to camelCase, so even basic `/node` parsing broke. The data needed to
-> draw a Thread mesh map simply isn't available through the OTBR REST API.
->
-> **Use this instead:** the **Open Home Foundation Matter Server** now renders a native
-> Thread mesh topology diagram (Thread tab in its dashboard), built from the standard
-> **Thread Network Diagnostics Cluster** over Matter — the correct data source. That is
-> the supported, Zigbee-map-equivalent way to visualize a Thread network.
+> **It still does — the endpoint moved rather than disappearing.** Current `ot-br-posix`
+> builds return 404 for the old `GET /diagnostics`, but serve the same topology through a
+> JSON:API task workflow (`POST /api/actions` → `/api/devices` → a network diagnostic per
+> router). This fork auto-detects that path and falls back to legacy `GET /diagnostics` on
+> older builds, and it enriches device names from the Home Assistant **Matter** server.
+> Verified against a live current-generation OTBR.
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
-[![GitHub Release](https://img.shields.io/github/release/jjtortosa/thread-topology.svg)](https://github.com/jjtortosa/thread-topology/releases)
-[![License](https://img.shields.io/github/license/jjtortosa/thread-topology.svg)](LICENSE)
+[![GitHub Release](https://img.shields.io/github/release/TeeJS/thread-topology.svg)](https://github.com/TeeJS/thread-topology/releases)
+[![License](https://img.shields.io/github/license/TeeJS/thread-topology.svg)](LICENSE)
 
 A Home Assistant custom integration that visualizes your Thread network topology, similar to the Zigbee network map. See your Thread Border Routers, end devices, and their connections at a glance.
 
@@ -74,7 +71,7 @@ Amazon/Eero • Router • LQ: [███] Excellent
 
 1. Open HACS in Home Assistant
 2. Click the three dots menu → **Custom repositories**
-3. Add `https://github.com/jjtortosa/thread-topology` as an **Integration**
+3. Add `https://github.com/TeeJS/thread-topology` as an **Integration**
 4. Search for "Thread Network Topology" and install
 5. Restart Home Assistant
 
@@ -240,11 +237,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Credits
 
+- Original project by [@jjtortosa](https://github.com/jjtortosa) ([thread-topology](https://github.com/jjtortosa/thread-topology)); this is a maintained fork
 - Built for the Home Assistant community
 - Inspired by the Zigbee network map functionality
 - Uses the OpenThread Border Router REST API
 
 ## Support
 
-- [GitHub Issues](https://github.com/jjtortosa/thread-topology/issues)
+- [GitHub Issues](https://github.com/TeeJS/thread-topology/issues)
 - [Home Assistant Community](https://community.home-assistant.io/)

@@ -1,14 +1,14 @@
 {
   "domain": "thread_topology",
   "name": "Thread Network Topology",
-  "codeowners": ["@jjtortosa"],
+  "codeowners": ["@TeeJS"],
   "config_flow": true,
   "dependencies": [],
   "after_dependencies": ["matter"],
-  "documentation": "https://github.com/jjtortosa/thread-topology",
+  "documentation": "https://github.com/TeeJS/thread-topology",
   "integration_type": "service",
   "iot_class": "local_polling",
-  "issue_tracker": "https://github.com/jjtortosa/thread-topology/issues",
+  "issue_tracker": "https://github.com/TeeJS/thread-topology/issues",
   "requirements": ["aiohttp>=3.8.0"],
-  "version": "0.2.0"
+  "version": "0.3.0"
 }
