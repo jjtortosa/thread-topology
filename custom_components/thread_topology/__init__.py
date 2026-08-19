@@ -7,7 +7,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN, DEFAULT_OTBR_URL
+from .const import DEFAULT_OTBR_URL, DOMAIN
 from .coordinator import ThreadTopologyCoordinator
 
 _LOGGER = logging.getLogger(__name__)

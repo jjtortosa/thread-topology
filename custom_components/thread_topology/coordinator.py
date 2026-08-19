@@ -12,7 +12,6 @@ from xml.sax.saxutils import escape as _xml_escape
 
 import aiohttp
 import yaml
-
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -579,7 +578,7 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
         except aiohttp.ClientError as err:
             raise UpdateFailed(f"Error communicating with OTBR: {err}") from err
-        except asyncio.TimeoutError as err:
+        except TimeoutError as err:
             raise UpdateFailed(f"Timeout communicating with OTBR: {err}") from err
         except OtbrTaskError as err:
             raise UpdateFailed(f"OTBR diagnostic task failed: {err}") from err
@@ -715,7 +714,7 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
             payload = await self._fetch_json(f"{ENDPOINT_API_DIAGNOSTICS}/{diagnostic_id}")
             return payload.get("data")
-        except (aiohttp.ClientError, asyncio.TimeoutError, OtbrTaskError) as err:
+        except (TimeoutError, aiohttp.ClientError, OtbrTaskError) as err:
             # One unreachable router should not fail the whole update.
             _LOGGER.debug("Skipping diagnostics for %s: %s", device_id, err)
             return None
@@ -761,7 +760,7 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             await asyncio.sleep(TASK_POLL_INTERVAL)
             try:
                 payload = await self._fetch_json(f"{ENDPOINT_ACTIONS}/{task_id}")
-            except (aiohttp.ClientError, asyncio.TimeoutError):
+            except (TimeoutError, aiohttp.ClientError):
                 continue  # transient; try again on the next poll
 
             item = payload.get("data") or payload
@@ -1249,7 +1248,7 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Separate nodes by role
         leader = None
         routers = []
-        for ext_addr, node in nodes.items():
+        for node in nodes.values():
             if node["role"] == "leader":
                 leader = node
             elif node["role"] == "router":
@@ -1488,7 +1487,7 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
             _LOGGER.debug("SVG saved to %s", svg_path)
             return "/local/thread_topology.svg"
-        except Exception as err:
+        except Exception as err:  # noqa: BLE001 - the map is optional; never fail the update over it
             _LOGGER.error("Failed to save SVG: %s", err)
             return None
 

@@ -6,7 +6,6 @@ from typing import Any
 
 import aiohttp
 import voluptuous as vol
-
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_URL
 
@@ -31,32 +30,34 @@ class ThreadTopologyConfigFlow(ConfigFlow, domain=DOMAIN):
 
             # Test connection to OTBR
             try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(
+                async with (
+                    aiohttp.ClientSession() as session,
+                    session.get(
                         f"{otbr_url}{ENDPOINT_NODE}",
                         timeout=aiohttp.ClientTimeout(total=10),
-                    ) as response:
-                        if response.status == 200:
-                            # OTBR serves this as application/json today, but
-                            # do not let a media type change break setup.
-                            data = await response.json(content_type=None)
-                            # Current builds renamed NetworkName to networkName.
-                            network_name = (
-                                data.get("networkName")
-                                or data.get("NetworkName")
-                                or "Thread Network"
-                            )
+                    ) as response,
+                ):
+                    if response.status == 200:
+                        # OTBR serves this as application/json today, but
+                        # do not let a media type change break setup.
+                        data = await response.json(content_type=None)
+                        # Current builds renamed NetworkName to networkName.
+                        network_name = (
+                            data.get("networkName")
+                            or data.get("NetworkName")
+                            or "Thread Network"
+                        )
 
-                            # Check if already configured
-                            await self.async_set_unique_id(network_name)
-                            self._abort_if_unique_id_configured()
+                        # Check if already configured
+                        await self.async_set_unique_id(network_name)
+                        self._abort_if_unique_id_configured()
 
-                            return self.async_create_entry(
-                                title=f"Thread: {network_name}",
-                                data={"otbr_url": otbr_url},
-                            )
-                        else:
-                            errors["base"] = "cannot_connect"
+                        return self.async_create_entry(
+                            title=f"Thread: {network_name}",
+                            data={"otbr_url": otbr_url},
+                        )
+                    else:
+                        errors["base"] = "cannot_connect"
             except aiohttp.ClientError:
                 errors["base"] = "cannot_connect"
             except TimeoutError:
