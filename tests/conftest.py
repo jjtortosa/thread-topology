@@ -1,9 +1,88 @@
 """Fixtures for Thread Topology tests."""
 from __future__ import annotations
 
+import json
+import sys
 from collections.abc import Generator
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
+
+FIXTURE_DIR = Path(__file__).parent / "fixtures"
+
+
+# --- Home Assistant stubs --------------------------------------------------
+# The integration is tested without Home Assistant installed. Most of HA can be
+# a MagicMock, but DataUpdateCoordinator is *subclassed*, and subclassing a
+# MagicMock silently turns the subclass into a mock too - every real method
+# then resolves to a mock instead of running. Give that one a real class.
+#
+# conftest is imported before any test module, so the sys.modules.setdefault
+# calls in the test modules themselves become no-ops and everyone shares these.
+
+
+class _StubUpdateFailed(Exception):
+    """Stand-in for homeassistant.helpers.update_coordinator.UpdateFailed."""
+
+
+class _StubDataUpdateCoordinator:
+    """Minimal stand-in exposing what the coordinator actually uses."""
+
+    def __init__(self, hass, logger, name=None, update_interval=None, **kwargs):
+        self.hass = hass
+        self.logger = logger
+        self.name = name
+        self.update_interval = update_interval
+        self.data = None
+
+    def __class_getitem__(cls, item):
+        return cls
+
+
+_update_coordinator_module = MagicMock()
+_update_coordinator_module.DataUpdateCoordinator = _StubDataUpdateCoordinator
+_update_coordinator_module.UpdateFailed = _StubUpdateFailed
+
+sys.modules.setdefault("homeassistant", MagicMock())
+sys.modules.setdefault("homeassistant.core", MagicMock())
+sys.modules.setdefault("homeassistant.config_entries", MagicMock())
+sys.modules.setdefault("homeassistant.const", MagicMock())
+sys.modules.setdefault("homeassistant.helpers", MagicMock())
+sys.modules.setdefault("homeassistant.helpers.device_registry", MagicMock())
+sys.modules.setdefault(
+    "homeassistant.helpers.update_coordinator", _update_coordinator_module
+)
+
+
+@pytest.fixture(scope="session")
+def otbr_jsonapi_capture() -> dict:
+    """Return a real ot-br-posix JSON:API capture.
+
+    Taken from a live OTBR running the current REST API, with addresses and
+    network names anonymized. Structure is untouched - this exists so the
+    translation layer is tested against what OTBR actually sends rather than
+    what the docs imply it sends.
+    """
+    with (FIXTURE_DIR / "otbr_jsonapi_capture.json").open(encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+@pytest.fixture
+def jsonapi_node_response(otbr_jsonapi_capture: dict) -> dict:
+    """Return the camelCase /node response from the live capture."""
+    return otbr_jsonapi_capture["node"]
+
+
+@pytest.fixture
+def jsonapi_devices_response(otbr_jsonapi_capture: dict) -> dict:
+    """Return the /api/devices collection from the live capture."""
+    return otbr_jsonapi_capture["devices"]
+
+
+@pytest.fixture
+def jsonapi_diagnostics_response(otbr_jsonapi_capture: dict) -> list:
+    """Return the per-router JSON:API diagnostic items from the live capture."""
+    return otbr_jsonapi_capture["diagnostics"]
 
 
 @pytest.fixture

@@ -14,6 +14,10 @@
 #   - Partial match: "121BEC" (matches anywhere in the address)
 #
 # Icon options: chip, router, home-assistant, homepod, nest, eero, smartthings, nanoleaf, apple
+#
+# Entries here take precedence over every built-in guess, including the border
+# router this integration polls - which otherwise defaults to the name
+# "SkyConnect (OTBR)" whether or not that is what you actually run.
 
 routers:
   # Example: SMlight SLZB-06/07 border router

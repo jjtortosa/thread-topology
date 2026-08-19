@@ -1,0 +1,303 @@
+{
+  "node": {
+    "baId": "00112233445566778899aabbccddeeff",
+    "baState": "",
+    "state": "router",
+    "routerCount": 2,
+    "rlocAddress": "fd00:1234:5678:9abc:0:ff:fe00:f800",
+    "extAddress": "0123456789abcdef",
+    "networkName": "ot-test-net",
+    "rloc16": "0xf800",
+    "routerId": 62,
+    "leaderData": {
+      "partitionId": 724038588,
+      "weighting": 64,
+      "dataVersion": 239,
+      "stableDataVersion": 43,
+      "leaderRouterId": 57
+    },
+    "extPanId": "1122334455667788"
+  },
+  "devices": {
+    "data": [
+      {
+        "id": "fedcba9876543210",
+        "type": "threadDevice",
+        "attributes": {
+          "extAddress": "fedcba9876543210",
+          "mlEidIid": "977fbefaca8117ef",
+          "omrIpv6Address": "fd00:abcd:ef01:1:7416:347:1d55:5dd",
+          "hostName": "",
+          "role": "router",
+          "mode": {
+            "deviceTypeFTD": true,
+            "rxOnWhenIdle": true,
+            "fullNetworkData": true
+          },
+          "created": "2026-01-01T00:00:00+00:00"
+        }
+      },
+      {
+        "id": "aabbccddeeff0011",
+        "type": "threadDevice",
+        "attributes": {
+          "extAddress": "aabbccddeeff0011",
+          "mlEidIid": "070cde43468c4246",
+          "omrIpv6Address": "fd00:abcd:ef01:1:5a77:32a0:2047:f45d",
+          "hostName": "",
+          "role": "child",
+          "mode": {
+            "deviceTypeFTD": false,
+            "rxOnWhenIdle": false,
+            "fullNetworkData": false
+          },
+          "created": "2026-01-01T00:00:00+00:00"
+        }
+      },
+      {
+        "id": "0123456789abcdef",
+        "type": "threadBorderRouter",
+        "attributes": {
+          "extAddress": "0123456789abcdef",
+          "mlEidIid": "b13ff757567249cf",
+          "omrIpv6Address": "fd00:abcd:ef01:1:195e:5e74:640c:5253",
+          "hostName": "",
+          "role": "router",
+          "mode": {
+            "deviceTypeFTD": true,
+            "rxOnWhenIdle": true,
+            "fullNetworkData": true
+          },
+          "baId": "00112233445566778899aabbccddeeff",
+          "baState": "active",
+          "state": "router",
+          "routerCount": 2,
+          "rlocAddress": "fd00:1234:5678:9abc:0:ff:fe00:f800",
+          "networkName": "ot-test-net",
+          "rloc16": "0xf800",
+          "routerId": 62,
+          "leaderData": {
+            "partitionId": 724038588,
+            "weighting": 64,
+            "dataVersion": 239,
+            "stableDataVersion": 43,
+            "leaderRouterId": 57
+          },
+          "extPanId": "1122334455667788",
+          "created": "2026-01-01T00:00:00+00:00",
+          "updated": "2026-01-01T00:00:00+00:00"
+        }
+      }
+    ],
+    "meta": {
+      "collection": {
+        "offset": 0,
+        "limit": 200,
+        "total": 3
+      }
+    }
+  },
+  "diagnostics": [
+    {
+      "id": "30762b3c-1d5e-4f90-849c-a7dc17c8d09c",
+      "type": "networkDiagnostics",
+      "attributes": {
+        "extAddress": "fedcba9876543210",
+        "rloc16": "0xe400",
+        "routerId": 57,
+        "mode": {
+          "rxOnWhenIdle": true,
+          "deviceTypeFTD": true,
+          "fullNetworkData": true
+        },
+        "connectivity": {
+          "parentPriority": 0,
+          "linkQuality3": 1,
+          "linkQuality2": 0,
+          "linkQuality1": 0,
+          "leaderCost": 0,
+          "idSequence": 152,
+          "activeRouters": 2,
+          "sedBufferSize": 1280,
+          "sedDatagramCount": 1
+        },
+        "route": {
+          "idSequence": 152,
+          "routeData": [
+            {
+              "routeId": 57,
+              "linkQualityOut": 0,
+              "linkQualityIn": 0,
+              "routeCost": 1
+            },
+            {
+              "routeId": 62,
+              "linkQualityOut": 3,
+              "linkQualityIn": 3,
+              "routeCost": 1
+            }
+          ]
+        },
+        "leaderData": {
+          "partitionId": 724038588,
+          "weighting": 64,
+          "dataVersion": 239,
+          "stableDataVersion": 43,
+          "leaderRouterId": 57
+        },
+        "ipv6Addresses": [
+          "fd00:abcd:ef01:1:7416:347:1d55:5dd",
+          "fd00:1234:5678:9abc:0:ff:fe00:fc00",
+          "fd00:1234:5678:9abc:0:ff:fe00:e400",
+          "fd00:1234:5678:9abc:977f:befa:ca81:17ef",
+          "fe80::fcdc:ba98:7654:3210"
+        ],
+        "childTable": [],
+        "children": [],
+        "routerNeighbors": [
+          {
+            "supportsErrorRate": true,
+            "rloc16": "0xf800",
+            "extAddress": "0123456789abcdef",
+            "version": 5,
+            "connectionTime": 822906,
+            "linkMargin": 49,
+            "averageRssi": -51,
+            "lastRssi": -52,
+            "frameErrorRate": 0.02671854756772518,
+            "messageErrorRate": 0.000976577401161194
+          }
+        ],
+        "isLeader": true,
+        "hostsService": false,
+        "isPrimaryBBR": false,
+        "isBorderRouter": false,
+        "created": "2026-01-01T00:00:00+00:00"
+      }
+    },
+    {
+      "id": "e065cac4-071d-4d3b-8424-bc01502760ba",
+      "type": "networkDiagnostics",
+      "attributes": {
+        "extAddress": "0123456789abcdef",
+        "rloc16": "0xf800",
+        "routerId": 62,
+        "mode": {
+          "rxOnWhenIdle": true,
+          "deviceTypeFTD": true,
+          "fullNetworkData": true
+        },
+        "connectivity": {
+          "parentPriority": 0,
+          "linkQuality3": 1,
+          "linkQuality2": 0,
+          "linkQuality1": 0,
+          "leaderCost": 1,
+          "idSequence": 152,
+          "activeRouters": 2,
+          "sedBufferSize": 1280,
+          "sedDatagramCount": 1
+        },
+        "route": {
+          "idSequence": 152,
+          "routeData": [
+            {
+              "routeId": 57,
+              "linkQualityOut": 3,
+              "linkQualityIn": 3,
+              "routeCost": 1
+            },
+            {
+              "routeId": 62,
+              "linkQualityOut": 0,
+              "linkQualityIn": 0,
+              "routeCost": 1
+            }
+          ]
+        },
+        "leaderData": {
+          "partitionId": 724038588,
+          "weighting": 64,
+          "dataVersion": 239,
+          "stableDataVersion": 43,
+          "leaderRouterId": 57
+        },
+        "ipv6Addresses": [
+          "fd00:1234:5678:9abc:0:ff:fe00:fc11",
+          "fd00:abcd:ef01:1:195e:5e74:640c:5253",
+          "fd00:1234:5678:9abc:0:ff:fe00:fc38",
+          "fd00:1234:5678:9abc:0:ff:fe00:fc10",
+          "fd00:1234:5678:9abc:0:ff:fe00:f800",
+          "fd00:1234:5678:9abc:b13f:f757:5672:49cf",
+          "fe80::0323:4567:89ab:cdef"
+        ],
+        "childTable": [
+          {
+            "childId": 2,
+            "timeout": 12,
+            "linkQuality": 2,
+            "mode": {
+              "rxOnWhenIdle": false,
+              "deviceTypeFTD": false,
+              "fullNetworkData": false
+            }
+          }
+        ],
+        "brCounters": {
+          "ifInUcastPkts": 3171,
+          "ifInBroadcastPkts": 0,
+          "ifOutUcastPkts": 6073,
+          "ifOutBroadcastPkts": 0,
+          "raRx": 1181,
+          "raTxSuccess": 942,
+          "raTxFailed": 0,
+          "rsRx": 688,
+          "rsTxSuccess": 3,
+          "rsTxFailed": 0
+        },
+        "children": [
+          {
+            "rxOnWhenIdle": false,
+            "deviceTypeFTD": false,
+            "fullNetworkData": false,
+            "cslSynchronized": false,
+            "supportsErrorRate": true,
+            "rloc16": "0xf802",
+            "childId": 2,
+            "extAddress": "aabbccddeeff0011",
+            "version": 5,
+            "timeout": 240,
+            "age": 3,
+            "connectionTime": 79054,
+            "supervisionInterval": 129,
+            "linkMargin": 18,
+            "averageRssi": -82,
+            "lastRssi": -84,
+            "frameErrorRate": 0.4621042311191559,
+            "messageErrorRate": 0.0776836797595024,
+            "queuedMessageCount": 0
+          }
+        ],
+        "routerNeighbors": [
+          {
+            "supportsErrorRate": true,
+            "rloc16": "0xe400",
+            "extAddress": "fedcba9876543210",
+            "version": 4,
+            "connectionTime": 84985,
+            "linkMargin": 51,
+            "averageRssi": -49,
+            "lastRssi": -50,
+            "frameErrorRate": 0,
+            "messageErrorRate": 0
+          }
+        ],
+        "isLeader": false,
+        "hostsService": true,
+        "isPrimaryBBR": true,
+        "isBorderRouter": true,
+        "created": "2026-01-01T00:00:01+00:00"
+      }
+    }
+  ]
+}

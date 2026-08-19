@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any
 
 from homeassistant.components.sensor import SensorEntity, SensorStateClass
@@ -14,6 +15,19 @@ from .const import DOMAIN
 from .coordinator import ThreadTopologyCoordinator
 
 _LOGGER = logging.getLogger(__name__)
+
+# Inline markdown/HTML metacharacters. Device names come from the Matter
+# registry (ultimately from device firmware), so a name like "**pwn**" or
+# "[x](javascript:...)" would otherwise inject formatting - or markup - into
+# the rendered card. Only inline specials are escaped; names always appear
+# mid-line (inside bold/heading text), so line-start tokens like '-' or '#'
+# need no handling.
+_MD_SPECIAL = re.compile(r"([\\`*_\[\]()<>|~])")
+
+
+def _md_escape(value: Any) -> str:
+    """Backslash-escape markdown-significant characters in untrusted text."""
+    return _MD_SPECIAL.sub(r"\\\1", "" if value is None else str(value))
 
 
 async def async_setup_entry(
@@ -111,15 +125,16 @@ class ThreadTopologyMapSensor(CoordinatorEntity[ThreadTopologyCoordinator], Sens
             return {}
 
         data = self.coordinator.data
-        nodes = data.get("nodes", {})
         leader = data.get("leader_address", "")
-        matter = data.get("matter_devices", {})
 
         # Build topology text with device names
         lines = []
-        lines.append(f"## 🧵 Thread Network: {data.get('network_name', 'Unknown')}")
+        lines.append(f"## 🧵 Thread Network: {_md_escape(data.get('network_name', 'Unknown'))}")
         lines.append("")
         lines.append(f"**Routers:** {data.get('router_count', 0)} | **Thread Devices:** {data.get('total_devices', 0)}")
+
+        nodes = data.get("nodes", {})
+        matter = data.get("matter_devices", {})
 
         # Add Matter summary
         thread_count = len(matter.get("thread", []))
@@ -138,8 +153,8 @@ class ThreadTopologyMapSensor(CoordinatorEntity[ThreadTopologyCoordinator], Sens
 
         for ext_address, node in sorted_nodes:
             role = node.get("role", "unknown")
-            name = node.get("name", f"Unknown ({ext_address[-4:].upper()})")
-            manufacturer = node.get("manufacturer", "")
+            name = _md_escape(node.get("name", f"Unknown ({ext_address[-4:].upper()})"))
+            manufacturer = _md_escape(node.get("manufacturer", ""))
 
             # Role icon and styling
             if role == "leader":
@@ -167,9 +182,9 @@ class ThreadTopologyMapSensor(CoordinatorEntity[ThreadTopologyCoordinator], Sens
             # Add children with device names
             for child in node.get("children", []):
                 child_type = child.get("type", "unknown")
-                child_name = child.get("name")
-                child_manufacturer = child.get("manufacturer", "")
-                child_model = child.get("model", "")
+                child_name = _md_escape(child["name"]) if child.get("name") else None
+                child_manufacturer = _md_escape(child.get("manufacturer", ""))
+                child_model = _md_escape(child.get("model", ""))
 
                 # Child icon based on type
                 if child_type == "sleepy":
@@ -197,14 +212,13 @@ class ThreadTopologyMapSensor(CoordinatorEntity[ThreadTopologyCoordinator], Sens
             lines.append("")
             lines.append("### 📶 Matter over WiFi")
             for device in wifi_devices:
-                lines.append(f"- **{device['name']}** ({device.get('manufacturer', '')})")
+                lines.append(
+                    f"- **{_md_escape(device['name'])}** ({_md_escape(device.get('manufacturer', ''))})"
+                )
             lines.append("")
 
         return {
             "topology_text": "\n".join(lines),
-            "nodes": nodes,
-            "matter_devices": matter,
-            "raw_data": data,
         }
 
 
