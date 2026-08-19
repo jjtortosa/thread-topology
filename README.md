@@ -1,5 +1,21 @@
 # Thread Network Topology for Home Assistant
 
+> ## ⚠️ DEPRECATED / ARCHIVED — do not use
+>
+> This integration is **no longer maintained** and has been archived.
+>
+> **Why it doesn't work:** it relied on the OpenThread Border Router (OTBR) REST API
+> endpoint `GET /diagnostics` to build the mesh topology. Home Assistant's OTBR build
+> (e.g. the Connect ZBT-1) **does not expose any mesh-diagnostics endpoint** (`/diagnostics`
+> returns HTTP 404) and only serves `/node/*`. The REST API also switched its JSON keys
+> from PascalCase to camelCase, so even basic `/node` parsing broke. The data needed to
+> draw a Thread mesh map simply isn't available through the OTBR REST API.
+>
+> **Use this instead:** the **Open Home Foundation Matter Server** now renders a native
+> Thread mesh topology diagram (Thread tab in its dashboard), built from the standard
+> **Thread Network Diagnostics Cluster** over Matter — the correct data source. That is
+> the supported, Zigbee-map-equivalent way to visualize a Thread network.
+
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
 [![GitHub Release](https://img.shields.io/github/release/jjtortosa/thread-topology.svg)](https://github.com/jjtortosa/thread-topology/releases)
 [![License](https://img.shields.io/github/license/jjtortosa/thread-topology.svg)](LICENSE)
