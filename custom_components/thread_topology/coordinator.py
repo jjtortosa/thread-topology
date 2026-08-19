@@ -8,6 +8,7 @@ import os
 from datetime import timedelta
 from pathlib import Path
 from typing import Any
+from xml.sax.saxutils import escape as _xml_escape
 
 import aiohttp
 import yaml
@@ -129,6 +130,19 @@ _WIFI_NAME_HINTS = ("wi-fi", "wifi", "wi fi")
 def _normalize_address(address: str) -> str:
     """Normalize an extended address by stripping separators and uppercasing."""
     return address.replace(":", "").replace("-", "").replace(" ", "").upper()
+
+
+def _svg_text(value: Any) -> str:
+    """Escape a value for safe inclusion as SVG text content.
+
+    Device, network and manufacturer names cross into the SVG straight from the
+    Matter registry and OTBR, so they are untrusted. Without escaping, a name
+    containing '&' or '<' produces invalid XML that breaks the whole image, and
+    a crafted name ('</text><script>...') is a stored-XSS vector once the file
+    is served from /local. Truncate the raw value *before* calling this, never
+    after, so a multi-character entity like '&amp;' is never sliced in half.
+    """
+    return _xml_escape("" if value is None else str(value))
 
 
 def _matter_node_id(identifiers: Any) -> int | None:
@@ -1286,7 +1300,7 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
   <!-- Header Section -->
   <text class="title" x="30" y="45">🧵 Thread Network Topology</text>
-  <text class="subtitle" x="30" y="68">{network_name} • Real-time network visualization</text>
+  <text class="subtitle" x="30" y="68">{_svg_text(network_name)} • Real-time network visualization</text>
 
   <!-- Stats Row -->
   <g transform="translate(30, 90)">
@@ -1344,8 +1358,8 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     <circle cx="0" cy="0" r="35" fill="url(#leaderGrad)"/>
     <text x="0" y="8" text-anchor="middle" font-size="28">👑</text>
   </g>
-  <text class="node-label" x="{leader_x}" y="{leader_y + 60}" text-anchor="middle">{leader["name"]}</text>
-  <text class="node-sublabel" x="{leader_x}" y="{leader_y + 74}" text-anchor="middle">{leader["manufacturer"]} • Leader • LQ: {lq_text}</text>
+  <text class="node-label" x="{leader_x}" y="{leader_y + 60}" text-anchor="middle">{_svg_text(leader["name"])}</text>
+  <text class="node-sublabel" x="{leader_x}" y="{leader_y + 74}" text-anchor="middle">{_svg_text(leader["manufacturer"])} • Leader • LQ: {lq_text}</text>
 '''
             # Draw Leader's children
             children = leader.get("children", [])
@@ -1364,7 +1378,7 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     <circle cx="0" cy="0" r="16" fill="url(#threadGrad)"/>
     <text x="0" y="5" text-anchor="middle" font-size="14">{emoji}</text>
   </g>
-  <text class="device-label" x="{cx}" y="{cy + 30}" text-anchor="middle">{child_name[:20]}</text>
+  <text class="device-label" x="{cx}" y="{cy + 30}" text-anchor="middle">{_svg_text(child_name[:20])}</text>
 '''
 
         # Draw Router nodes
@@ -1382,8 +1396,8 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     <circle cx="0" cy="0" r="25" fill="url(#routerGrad)"/>
     <text x="0" y="7" text-anchor="middle" font-size="20">📡</text>
   </g>
-  <text class="node-label" x="{rx}" y="{ry + 42}" text-anchor="middle">{router["name"]}</text>
-  <text class="node-sublabel" x="{rx}" y="{ry + 55}" text-anchor="middle">{router["manufacturer"]} • Router • LQ: {lq_text}</text>
+  <text class="node-label" x="{rx}" y="{ry + 42}" text-anchor="middle">{_svg_text(router["name"])}</text>
+  <text class="node-sublabel" x="{rx}" y="{ry + 55}" text-anchor="middle">{_svg_text(router["manufacturer"])} • Router • LQ: {lq_text}</text>
 '''
             # Draw Router's children
             children = router.get("children", [])
@@ -1402,7 +1416,7 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     <circle cx="0" cy="0" r="16" fill="url(#threadGrad)"/>
     <text x="0" y="5" text-anchor="middle" font-size="14">{emoji}</text>
   </g>
-  <text class="device-label" x="{cx}" y="{cy + 30}" text-anchor="middle">{child_name[:18]}</text>
+  <text class="device-label" x="{cx}" y="{cy + 30}" text-anchor="middle">{_svg_text(child_name[:18])}</text>
 '''
 
         # WiFi section
@@ -1420,8 +1434,8 @@ class ThreadTopologyCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             svg += f'''  <g transform="translate({dx}, {wifi_y + 40})">
     <rect x="-40" y="-25" width="150" height="50" rx="8" fill="url(#wifiGrad)" opacity="0.2"/>
     <text x="0" y="-2" font-size="16">🔌</text>
-    <text class="device-label" x="25" y="-2">{device["name"][:16]}</text>
-    <text class="node-sublabel" x="25" y="12">{device.get("manufacturer", "")[:16]}</text>
+    <text class="device-label" x="25" y="-2">{_svg_text(device["name"][:16])}</text>
+    <text class="node-sublabel" x="25" y="12">{_svg_text(device.get("manufacturer", "")[:16])}</text>
   </g>
 '''
 
